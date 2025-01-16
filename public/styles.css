@@ -1,0 +1,85 @@
+/* Allow the main body area to be draggable */
+body {
+    -webkit-app-region: drag;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    height: 100vh;
+    background: transparent;
+}
+
+/* Draggable area that encapsulates the keypad */
+.draggable-area {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+/* Keypad styles */
+.keypad {
+    display: grid;
+    gap: 10px;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+}
+
+/* Button and interactive elements should not affect drag */
+.key,
+.close-button {
+    -webkit-app-region: no-drag;
+    position: relative;
+    background-color: #444;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+/* Adjust layout and styling for the close button */
+.close-button {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 20px;
+    height: 20px;
+    background-color: black;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+}
+
+.close-button:hover {
+    background-color: rgb(21, 21, 21);
+    color: #fff;
+}
+
+/* Disable text selection across the entire window */
+body,
+.key,
+.close-button {
+    user-select: none; /* Prevent text selection */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+/* Disable outline on focus to prevent visual feedback when buttons are clicked */
+.key,
+.close-button {
+    outline: none;
+}
