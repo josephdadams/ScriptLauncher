@@ -1,0 +1,69 @@
+{
+    "name": "scriptlauncher",
+    "version": "1.2.0",
+    "author": "Joseph Adams <joseph@josephadams.dev>",
+    "description": "ScriptLauncher is a really simple app - it accepts HTTP POST requests and runs the script provided.",
+    "main": "dist/main.js",
+    "scripts": {
+        "start": "yarn build && electron .",
+        "build": "tsc",
+        "dev": "concurrently \"tsc -w\" \"wait-on dist/main.js && electron .\"",
+        "format": "prettier -w .",
+        "lint:raw": "eslint --ext .ts --ext .js --ignore-pattern dist --ignore-pattern pkg",
+        "lint": "yarn lint:raw ."
+    },
+    "build": {
+        "appId": "com.josephadams.scriptlauncher",
+        "productName": "scriptlauncher",
+        "files": [
+            "dist/**/*",
+            "public/**/*",
+            "assets/**/*"
+        ],
+        "mac": {
+            "target": [
+                {
+                    "target": "dmg",
+                    "arch": [
+                        "x64",
+                        "arm64"
+                    ]
+                }
+            ],
+            "category": "public.app-category.utilities",
+            "icon": "assets/tray-icon.png",
+            "identity": "Joseph Adams (R2PY2DC3A4)",
+            "extendInfo": {
+                "NSApplicationSupportsSecureRestorableState": true,
+                "electronTeamId": "R2PY2DC3A4"
+            },
+            "hardenedRuntime": true,
+            "gatekeeperAssess": true,
+            "entitlements": "entitlements.mac.plist",
+            "entitlementsInherit": "entitlements.mac.plist"
+        },
+        "win": {
+            "target": "nsis",
+            "icon": "assets/tray-icon.ico"
+        },
+        "linux": {
+            "target": "AppImage",
+            "icon": "assets/tray-icon.png"
+        },
+        "generateUpdatesFilesForAllChannels": false
+    },
+    "dependencies": {
+        "electron-store": "^8.0.0"
+    },
+    "devDependencies": {
+        "@electron/notarize": "^2.5.0",
+        "@types/node": "^18.0.0",
+        "concurrently": "^8.0.0",
+        "electron": "^33.2.1",
+        "electron-builder": "^25.1.8",
+        "prettier": "^3.3.3",
+        "ts-node": "^10.0.0",
+        "typescript": "^5.0.0",
+        "wait-on": "^7.0.0"
+    }
+}
