@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'self'; script-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline';"
+        />
+        <title>ScriptLauncher Settings</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 20px;
+            }
+            form {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+            label {
+                font-weight: bold;
+            }
+            input {
+                padding: 8px;
+                font-size: 14px;
+            }
+            button {
+                padding: 10px 15px;
+                background-color: #28a745;
+                color: white;
+                border: none;
+                cursor: pointer;
+                font-size: 16px;
+                border-radius: 5px;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>ScriptLauncher Settings</h1>
+        <form id="settingsForm">
+            <label for="password">Password:</label>
+            <input type="text" id="password" name="password" value="admin" />
+
+            <button type="submit">Save Settings</button>
+        </form>
+        <script src="./settings.js"></script>
+    </body>
+</html>

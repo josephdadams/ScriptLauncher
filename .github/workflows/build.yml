@@ -5,6 +5,9 @@ on:
         tags:
             - 'v*.*.*' # Trigger on version tags like v1.0.0
 
+permissions:
+    contents: write
+
 jobs:
     build_desktop:
         name: Build Desktop on ${{ matrix.os }}
@@ -28,7 +31,6 @@ jobs:
               env:
                   DEVELOPER_ID_CERT: ${{ secrets.DEVELOPER_ID_CERT }}
                   DEVELOPER_ID_CERT_PASSWORD: ${{ secrets.DEVELOPER_ID_CERT_PASSWORD }}
-                  CSC_NAME: ${{ secrets.CSC_NAME }}
               run: |
                   echo "$DEVELOPER_ID_CERT" | base64 --decode > developer_id_certificate.p12
                   security create-keychain -p "" build.keychain
@@ -53,4 +55,3 @@ jobs:
                   APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
                   APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
                   APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-                  CSC_NAME: ${{ secrets.CSC_NAME }}
