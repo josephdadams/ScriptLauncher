@@ -294,8 +294,6 @@ export function initializeServer(): HttpServer {
 
         // Predefined script: Send system alert
         socket.on('sendAlert', (password: string, message: string) => {
-			console.log('password: ', password)
-			console.log('message: ', message)
             if (password !== adminPassword) {
                 socket.emit('command_result', 'Error: Invalid admin password.')
                 return
@@ -310,7 +308,6 @@ export function initializeServer(): HttpServer {
         })
 
         socket.on('disconnect', () => {
-            console.log('A user disconnected')
         })
     })
 
