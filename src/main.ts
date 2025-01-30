@@ -16,8 +16,8 @@ app.on('ready', () => {
         app.dock.hide()
     }
 
-	const store = new Store()
-	const PORT = store.get('port')
+    const store = new Store()
+    const PORT = store.get('port')
 
     createTray()
 
@@ -26,8 +26,9 @@ app.on('ready', () => {
 
     // Initialize the server and start it
     const server = initializeServer()
+
     server.listen(PORT, () => {
-        console.log(`Server running on http://localhost:${PORT}`)
+        console.log(`ScriptLauncher Server running on http://localhost:${PORT}`)
     })
 })
 

@@ -68,7 +68,6 @@ To develop ScriptLauncher, you will need to have Node.js and Yarn installed. Fol
     yarn dist
     ```
 
-
 # API
 
 ScriptLauncher provides both a **REST-based API** and a **Socket.IO-based API**. Both APIs are available on **Port `8810`**.
@@ -109,6 +108,7 @@ The **Socket.IO API** allows real-time interaction with the ScriptLauncher servi
 **Description**: Executes a script using a specified executable (e.g., `node`, `python`, `bash`).
 
 **Arguments**:
+
 - `executable` (string): The executable used to run the script (e.g., `node`, `python`, `bash`).
 - `script` (string): The script code to be executed.
 - `password` (string): The admin password for authorization.
@@ -116,17 +116,17 @@ The **Socket.IO API** allows real-time interaction with the ScriptLauncher servi
 **Example**:
 
 ```js
-const socket = io('http://localhost:8800');
+const socket = io('http://localhost:8800')
 
 socket.on('connect', () => {
-  // Send a script to be executed by the 'node' executable
-  const script = `console.log('Hello from the Node.js script!')`;
-  socket.emit('execute', 'node', script, 'your-secret-password');
-});
+    // Send a script to be executed by the 'node' executable
+    const script = `console.log('Hello from the Node.js script!')`
+    socket.emit('execute', 'node', script, 'your-secret-password')
+})
 
 socket.on('script_result', (result) => {
-  console.log('Script result:', result);
-});
+    console.log('Script result:', result)
+})
 ```
 
 #### Event: `shutdown`
@@ -134,6 +134,7 @@ socket.on('script_result', (result) => {
 **Description**: Shuts down the system after a specified delay (in minutes). A notification is shown before shutting down.
 
 **Arguments**:
+
 - `password` (string): The admin password for authorization.
 - `time` (number): The delay in minutes before shutdown.
 
@@ -141,12 +142,12 @@ socket.on('script_result', (result) => {
 
 ```js
 socket.on('shutdown', (password, time) => {
-  socket.emit('shutdown', password, time);
-});
+    socket.emit('shutdown', password, time)
+})
 
 socket.on('shutdown_result', (result) => {
-  console.log(result);
-});
+    console.log(result)
+})
 ```
 
 ### 2. **REST API** (HTTP-based communication)
@@ -160,11 +161,13 @@ The **REST API** allows you to send HTTP requests to execute scripts and get res
 **Description**: Executes a script using the specified executable and returns the result as a response.
 
 **Request Body** (JSON):
+
 - `executable` (string): The executable used to run the script (e.g., `node`, `python`, `bash`).
 - `script` (string): The script code to be executed.
 - `password` (string): The admin password for authorization.
 
 **Response** (JSON):
+
 - `result` (string): The output or error message from the executed script.
 
 #### Example Request:
@@ -185,7 +188,7 @@ Content-Type: application/json
 
 ```json
 {
-  "result": "Hello from the REST API script!"
+    "result": "Hello from the REST API script!"
 }
 ```
 
@@ -193,7 +196,7 @@ Content-Type: application/json
 
 ```json
 {
-  "result": "Error: Invalid admin password."
+    "result": "Error: Invalid admin password."
 }
 ```
 
@@ -204,10 +207,12 @@ Content-Type: application/json
 **Description**: Shuts down the system after a specified delay (in minutes). A notification will be shown before shutting down.
 
 **Request Body** (JSON):
+
 - `password` (string): The admin password for authorization.
 - `time` (number): The delay in minutes before shutdown.
 
 **Response** (JSON):
+
 - `result` (string): The message indicating that the system will shut down after the specified time.
 
 #### Example Request:
@@ -227,7 +232,7 @@ Content-Type: application/json
 
 ```json
 {
-  "result": "System will shut down in 5 minutes."
+    "result": "System will shut down in 5 minutes."
 }
 ```
 
@@ -240,6 +245,7 @@ These predefined scripts perform common system operations. These events are avai
 **Description**: Reboots the system immediately.
 
 **Arguments**:
+
 - `password` (string): The admin password for authorization.
 
 #### Event: `getSystemInfo`
@@ -247,6 +253,7 @@ These predefined scripts perform common system operations. These events are avai
 **Description**: Retrieves system information like OS version and architecture.
 
 **Arguments**:
+
 - `password` (string): The admin password for authorization.
 
 #### Event: `checkDiskSpace`
@@ -254,6 +261,7 @@ These predefined scripts perform common system operations. These events are avai
 **Description**: Checks available disk space.
 
 **Arguments**:
+
 - `password` (string): The admin password for authorization.
 
 #### Event: `listProcesses`
@@ -261,6 +269,7 @@ These predefined scripts perform common system operations. These events are avai
 **Description**: Lists currently running processes.
 
 **Arguments**:
+
 - `password` (string): The admin password for authorization.
 
 #### Event: `checkSystemLoad`
@@ -268,6 +277,7 @@ These predefined scripts perform common system operations. These events are avai
 **Description**: Retrieves current system load (CPU usage).
 
 **Arguments**:
+
 - `password` (string): The admin password for authorization.
 
 #### Event: `sendAlert`
@@ -275,6 +285,7 @@ These predefined scripts perform common system operations. These events are avai
 **Description**: Sends a custom system alert message.
 
 **Arguments**:
+
 - `password` (string): The admin password for authorization.
 - `message` (string): The alert message to be sent.
 

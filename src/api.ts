@@ -2,34 +2,63 @@ import express, { Request, Response } from 'express'
 import { Server as HttpServer } from 'http'
 import { Socket } from 'socket.io'
 import { spawn } from 'child_process'
-import { Server as SocketIOServer } from 'socket.io';
+import { Server as SocketIOServer } from 'socket.io'
 import Store from 'electron-store'
+
+import systeminformation from 'systeminformation'
 
 const store = new Store()
 const adminPassword = store.get('password')
+
+// Helper function to gather system info
+async function getSystemInfo() {
+    try {
+        const cpu = await systeminformation.cpu()
+		const currentLoad = await systeminformation.currentLoad()
+        const memory = await systeminformation.mem()
+        const networkInterfaces = await systeminformation.networkInterfaces()
+		const networkStats = await systeminformation.networkStats()
+        const gpu = await systeminformation.graphics()
+
+        return {
+            cpu,
+			currentLoad,
+            memory,
+            networkInterfaces,
+			networkStats,
+            gpu,
+        }
+    } catch (error) {
+        console.error('Error getting system information:', error)
+        return null
+    }
+}
 
 // Helper function to run system commands
 function runSystemCommand(
     command: string[],
     successMessage: string,
-	socket?: Socket,
+    socket?: Socket
 ) {
     const process = spawn(command[0], command.slice(1))
 
     process.on('close', (code) => {
-		if (socket) {
-        if (code === 0) {
-            socket.emit('command_result', successMessage)
-        } else {
-            socket.emit('command_result', `Error executing command.`)
+        if (socket) {
+            if (code === 0) {
+                socket.emit('command_result', successMessage)
+            } else {
+                socket.emit('command_result', `Error executing command.`)
+            }
         }
-	}
     })
 
     process.on('error', (err) => {
-		if (socket) {
-        	socket.emit('command_result', `Error during execution: ${err.message}`)
-		}
+        if (socket) {
+            socket.emit(
+                'command_result',
+                `Error during execution: ${err.message}`
+            )
+        }
     })
 }
 
@@ -99,12 +128,12 @@ function shutdownSystem(minutes: number, socket?: Socket): void {
             notificationMessage,
         ]
     } else {
-		if (socket) {
-			socket.emit(
-				'command_result',
-				'Error: Unsupported platform for shutdown.'
-			)
-		}        
+        if (socket) {
+            socket.emit(
+                'command_result',
+                'Error: Unsupported platform for shutdown.'
+            )
+        }
         return
     }
 
@@ -121,7 +150,7 @@ function shutdownSystem(minutes: number, socket?: Socket): void {
         runSystemCommand(
             notificationCommand,
             `System will shut down in ${minutes} minutes.`,
-			socket
+            socket
         )
     }
 
@@ -129,7 +158,7 @@ function shutdownSystem(minutes: number, socket?: Socket): void {
     runSystemCommand(
         shutdownCommand,
         `System will shut down in ${minutes} minutes.`,
-		socket
+        socket
     )
 }
 
@@ -205,6 +234,23 @@ export function initializeServer(): HttpServer {
             shutdownSystem(time, socket) // Trigger system shutdown
         })
 
+        // Handle cancel shutdown
+        socket.on('shutdown_cancel', (password: string) => {
+            if (password !== adminPassword) {
+                socket.emit('shutdown_result', 'Error: Invalid admin password.')
+                return
+            }
+
+            const platform = process.platform
+            let cancelCommand: string[] = []
+            if (platform === 'win32') {
+                cancelCommand = ['shutdown', '/a']
+            } else if (platform === 'darwin' || platform === 'linux') {
+                cancelCommand = ['sudo', 'shutdown', '-c']
+            }
+            runSystemCommand(cancelCommand, 'Shutdown cancelled.', socket)
+        })
+
         // Predefined script: Reboot
         socket.on('reboot', (password: string) => {
             if (password !== adminPassword) {
@@ -233,7 +279,7 @@ export function initializeServer(): HttpServer {
             runSystemCommand(
                 systemInfoCommand,
                 'System Information retrieved.',
-				socket
+                socket
             )
         })
 
@@ -252,7 +298,7 @@ export function initializeServer(): HttpServer {
             runSystemCommand(
                 diskSpaceCommand,
                 'Disk space information retrieved.',
-				socket
+                socket
             )
         })
 
@@ -269,7 +315,7 @@ export function initializeServer(): HttpServer {
             runSystemCommand(
                 processListCommand,
                 'List of running processes retrieved.',
-				socket
+                socket
             )
         })
 
@@ -288,7 +334,7 @@ export function initializeServer(): HttpServer {
             runSystemCommand(
                 systemLoadCommand,
                 'System load information retrieved.',
-				socket
+                socket
             )
         })
 
@@ -307,8 +353,21 @@ export function initializeServer(): HttpServer {
             runSystemCommand(alertCommand, 'System alert sent.', socket)
         })
 
-        socket.on('disconnect', () => {
-        })
+        socket.on('disconnect', () => {})
+    })
+
+    // Start broadcasting system info to all connected clients every 5 seconds
+    const systemInfoInterval = setInterval(async () => {
+        const systemInfo = await getSystemInfo()
+        if (systemInfo) {
+            io.emit('system_info', systemInfo) // Broadcast to all connected clients
+        }
+    }, 5000) // Emit every 5 seconds
+
+    // Handle graceful shutdown to clear the interval when the server stops
+    server.on('close', () => {
+        clearInterval(systemInfoInterval)
+        console.log('System info interval cleared')
     })
 
     // Example express route for health check
