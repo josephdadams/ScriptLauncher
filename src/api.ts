@@ -4,6 +4,7 @@ import { Socket } from 'socket.io'
 import { spawn } from 'child_process'
 import { Server as SocketIOServer } from 'socket.io'
 import Store from 'electron-store'
+import { Notification } from 'electron'
 
 import systeminformation from 'systeminformation'
 
@@ -14,18 +15,18 @@ const adminPassword = store.get('password')
 async function getSystemInfo() {
     try {
         const cpu = await systeminformation.cpu()
-		const currentLoad = await systeminformation.currentLoad()
+        const currentLoad = await systeminformation.currentLoad()
         const memory = await systeminformation.mem()
         const networkInterfaces = await systeminformation.networkInterfaces()
-		const networkStats = await systeminformation.networkStats()
+        const networkStats = await systeminformation.networkStats()
         const gpu = await systeminformation.graphics()
 
         return {
             cpu,
-			currentLoad,
+            currentLoad,
             memory,
             networkInterfaces,
-			networkStats,
+            networkStats,
             gpu,
         }
     } catch (error) {
@@ -266,78 +267,6 @@ export function initializeServer(): HttpServer {
             runSystemCommand(rebootCommand, 'System is rebooting...', socket)
         })
 
-        // Predefined script: Get system information
-        socket.on('getSystemInfo', (password: string) => {
-            if (password !== adminPassword) {
-                socket.emit('command_result', 'Error: Invalid admin password.')
-                return
-            }
-
-            const systemInfoCommand =
-                process.platform === 'win32' ? ['systeminfo'] : ['uname', '-a']
-
-            runSystemCommand(
-                systemInfoCommand,
-                'System Information retrieved.',
-                socket
-            )
-        })
-
-        // Predefined script: Check disk space
-        socket.on('checkDiskSpace', (password: string) => {
-            if (password !== adminPassword) {
-                socket.emit('command_result', 'Error: Invalid admin password.')
-                return
-            }
-
-            const diskSpaceCommand =
-                process.platform === 'win32'
-                    ? ['wmic', 'logicaldisk', 'get', 'size,freespace,caption']
-                    : ['df', '-h']
-
-            runSystemCommand(
-                diskSpaceCommand,
-                'Disk space information retrieved.',
-                socket
-            )
-        })
-
-        // Predefined script: List running processes
-        socket.on('listProcesses', (password: string) => {
-            if (password !== adminPassword) {
-                socket.emit('command_result', 'Error: Invalid admin password.')
-                return
-            }
-
-            const processListCommand =
-                process.platform === 'win32' ? ['tasklist'] : ['ps', 'aux']
-
-            runSystemCommand(
-                processListCommand,
-                'List of running processes retrieved.',
-                socket
-            )
-        })
-
-        // Predefined script: Check system load
-        socket.on('checkSystemLoad', (password: string) => {
-            if (password !== adminPassword) {
-                socket.emit('command_result', 'Error: Invalid admin password.')
-                return
-            }
-
-            const systemLoadCommand =
-                process.platform === 'win32'
-                    ? ['wmic', 'cpu', 'get', 'loadpercentage']
-                    : ['top', '-n', '1']
-
-            runSystemCommand(
-                systemLoadCommand,
-                'System load information retrieved.',
-                socket
-            )
-        })
-
         // Predefined script: Send system alert
         socket.on('sendAlert', (password: string, message: string) => {
             if (password !== adminPassword) {
@@ -345,12 +274,16 @@ export function initializeServer(): HttpServer {
                 return
             }
 
-            const alertCommand =
-                process.platform === 'win32'
-                    ? ['msg', '*', message]
-                    : ['notify-send', 'System Alert', message]
+            // Create and show an Electron notification
+            const notification = new Notification({
+                title: 'ScriptLauncher Alert',
+                body: message, // The message passed to the alert
+            })
 
-            runSystemCommand(alertCommand, 'System alert sent.', socket)
+            notification.show() // Display the notification
+
+            // Send a confirmation back to the client via Socket.IO
+            socket.emit('command_result', 'System alert sent.')
         })
 
         socket.on('disconnect', () => {})
