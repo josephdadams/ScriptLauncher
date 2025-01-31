@@ -97,10 +97,6 @@ The **Socket.IO API** allows real-time interaction with the ScriptLauncher servi
 - **`execute`**: Custom event used to send a script to the server for execution. The script will be executed using the specified executable.
 - **`shutdown`**: Custom event used to trigger a system shutdown with a custom time.
 - **`reboot`**: Predefined event to trigger a system reboot.
-- **`getSystemInfo`**: Predefined event to retrieve system information (OS, architecture, etc.).
-- **`checkDiskSpace`**: Predefined event to check the available disk space.
-- **`listProcesses`**: Predefined event to list the currently running processes.
-- **`checkSystemLoad`**: Predefined event to check the system load (CPU usage).
 - **`sendAlert`**: Predefined event to send a system alert message.
 
 #### Event: `execute`
@@ -243,38 +239,6 @@ These predefined scripts perform common system operations. These events are avai
 #### Event: `reboot`
 
 **Description**: Reboots the system immediately.
-
-**Arguments**:
-
-- `password` (string): The admin password for authorization.
-
-#### Event: `getSystemInfo`
-
-**Description**: Retrieves system information like OS version and architecture.
-
-**Arguments**:
-
-- `password` (string): The admin password for authorization.
-
-#### Event: `checkDiskSpace`
-
-**Description**: Checks available disk space.
-
-**Arguments**:
-
-- `password` (string): The admin password for authorization.
-
-#### Event: `listProcesses`
-
-**Description**: Lists currently running processes.
-
-**Arguments**:
-
-- `password` (string): The admin password for authorization.
-
-#### Event: `checkSystemLoad`
-
-**Description**: Retrieves current system load (CPU usage).
 
 **Arguments**:
 
