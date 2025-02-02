@@ -70,23 +70,21 @@ To develop ScriptLauncher, you will need to have Node.js and Yarn installed. Fol
 
 # API
 
-ScriptLauncher provides both a **REST-based API** and a **Socket.IO-based API**. Both APIs are available on **Port `8810`**.
+ScriptLauncher provides a **Socket.IO-based API**. It is available on **Port `8810`**.
 
 ## Overview
 
-The ScriptLauncher API allows users to execute scripts through various executables (such as `node`, `python`, `bash`, etc.). Scripts can be passed as raw code, and the results of execution are returned either via REST responses or through socket events. The API also includes predefined commands for system management tasks like shutdown, reboot, and fetching system information.
+The ScriptLauncher API allows users to execute scripts through various executables (such as `node`, `python`, `bash`, etc.). Scripts can be passed as raw code, and the results of execution are returned through socket events. The API also includes predefined commands for system management tasks like shutdown, reboot, and fetching system information.
 
 ## Base URL
 
-Both APIs are available on the following URL:
+The socket.io API is available on the following URL:
 
 ```
-http://localhost:8800
+http://localhost:8810
 ```
 
-## API Endpoints
-
-### 1. **Socket.IO API** (Real-time communication)
+## API Endpoint
 
 The **Socket.IO API** allows real-time interaction with the ScriptLauncher service, where clients can send scripts for execution and receive results.
 
@@ -97,6 +95,7 @@ The **Socket.IO API** allows real-time interaction with the ScriptLauncher servi
 - **`execute`**: Custom event used to send a script to the server for execution. The script will be executed using the specified executable.
 - **`shutdown`**: Custom event used to trigger a system shutdown with a custom time.
 - **`reboot`**: Predefined event to trigger a system reboot.
+- **`lock`**: Predefined event to trigger locking the computer screen.
 - **`sendAlert`**: Predefined event to send a system alert message.
 
 #### Event: `execute`
@@ -106,24 +105,9 @@ The **Socket.IO API** allows real-time interaction with the ScriptLauncher servi
 **Arguments**:
 
 - `executable` (string): The executable used to run the script (e.g., `node`, `python`, `bash`).
-- `script` (string): The script code to be executed.
+- `args` (string): The arguments to include.
+- `stdin` (string): The string to pipe to stdin.
 - `password` (string): The admin password for authorization.
-
-**Example**:
-
-```js
-const socket = io('http://localhost:8800')
-
-socket.on('connect', () => {
-    // Send a script to be executed by the 'node' executable
-    const script = `console.log('Hello from the Node.js script!')`
-    socket.emit('execute', 'node', script, 'your-secret-password')
-})
-
-socket.on('script_result', (result) => {
-    console.log('Script result:', result)
-})
-```
 
 #### Event: `shutdown`
 
@@ -144,92 +128,6 @@ socket.on('shutdown', (password, time) => {
 socket.on('shutdown_result', (result) => {
     console.log(result)
 })
-```
-
-### 2. **REST API** (HTTP-based communication)
-
-The **REST API** allows you to send HTTP requests to execute scripts and get results.
-
-#### Endpoint: `/execute`
-
-**Method**: `POST`
-
-**Description**: Executes a script using the specified executable and returns the result as a response.
-
-**Request Body** (JSON):
-
-- `executable` (string): The executable used to run the script (e.g., `node`, `python`, `bash`).
-- `script` (string): The script code to be executed.
-- `password` (string): The admin password for authorization.
-
-**Response** (JSON):
-
-- `result` (string): The output or error message from the executed script.
-
-#### Example Request:
-
-```bash
-POST /execute HTTP/1.1
-Host: http://localhost:8800
-Content-Type: application/json
-
-{
-  "executable": "node",
-  "script": "console.log('Hello from the REST API script!')",
-  "password": "your-secret-password"
-}
-```
-
-#### Example Response (Success):
-
-```json
-{
-    "result": "Hello from the REST API script!"
-}
-```
-
-#### Example Response (Error):
-
-```json
-{
-    "result": "Error: Invalid admin password."
-}
-```
-
-#### Endpoint: `/shutdown`
-
-**Method**: `POST`
-
-**Description**: Shuts down the system after a specified delay (in minutes). A notification will be shown before shutting down.
-
-**Request Body** (JSON):
-
-- `password` (string): The admin password for authorization.
-- `time` (number): The delay in minutes before shutdown.
-
-**Response** (JSON):
-
-- `result` (string): The message indicating that the system will shut down after the specified time.
-
-#### Example Request:
-
-```bash
-POST /shutdown HTTP/1.1
-Host: http://localhost:8800
-Content-Type: application/json
-
-{
-  "password": "your-secret-password",
-  "time": 5
-}
-```
-
-#### Example Response (Success):
-
-```json
-{
-    "result": "System will shut down in 5 minutes."
-}
 ```
 
 ### 3. **Predefined Scripts**

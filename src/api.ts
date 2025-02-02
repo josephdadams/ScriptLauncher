@@ -66,7 +66,8 @@ function runSystemCommand(
 // Define the runScript function
 export function runScript(
     executable: string,
-    script: string,
+    args: string,
+	stdin: string,
     password: string
 ): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -75,12 +76,12 @@ export function runScript(
             return
         }
 
-        const process = spawn(executable, [])
+        const process = spawn(executable, [...args.split(' ')])
 
         let output = ''
         let errorOutput = ''
 
-        process.stdin.write(script)
+        process.stdin.write(stdin)
         process.stdin.end() // Close the stdin stream
 
         process.stdout.on('data', (data) => {
@@ -171,47 +172,13 @@ export function initializeServer(): HttpServer {
 
     app.use(express.json())
 
-    // REST API - Execute script via POST request
-    app.post('/execute', (req: Request, res: Response) => {
-        const { executable, script, password } = req.body
-
-        if (!executable || !script || !password) {
-            res.status(400).json({
-                result: 'Error: Missing executable, script, or password.',
-            })
-            return
-        }
-
-        runScript(executable, script, password)
-            .then((output) => {
-                res.json({ result: output })
-            })
-            .catch((error) => {
-                res.status(500).json({ result: `Error: ${error}` })
-            })
-    })
-
-    // REST API - Shutdown server with custom time
-    app.post('/shutdown', (req: Request, res: Response) => {
-        const { password, time } = req.body
-
-        if (password !== adminPassword) {
-            res.status(403).json({ result: 'Error: Invalid admin password.' })
-            return
-        }
-
-        res.json({ result: `System will shut down in ${time} minutes.` })
-
-        shutdownSystem(time, undefined) // Shutdown without a socket response for REST API
-    })
-
     // Socket.io connection handling
     io.on('connection', (socket: Socket) => {
         // Handle execute event
-        socket.on(
+		socket.on(
             'execute',
-            (executable: string, script: string, password: string) => {
-                runScript(executable, script, password)
+            (executable: string, args: string, stdin: string, password: string) => {
+                runScript(executable, args, stdin, password)
                     .then((output) => {
                         socket.emit('script_result', output)
                     })
@@ -266,6 +233,26 @@ export function initializeServer(): HttpServer {
 
             runSystemCommand(rebootCommand, 'System is rebooting...', socket)
         })
+
+		//Predefined script: Lock
+		socket.on('lock', (password: string) => {
+			if (password !== adminPassword) {
+				socket.emit('command_result', 'Error: Invalid admin password.')
+				return
+			}
+
+			const platform = process.platform
+			let lockCommand: string[] = []
+			if (platform === 'win32') {
+				lockCommand = ['rundll32.exe', 'user32.dll,LockWorkStation']
+			} else if (platform === 'darwin') {
+				lockCommand = ['osascript', '-e', 'tell application "System Events" to keystroke "q" using {control down, command down}']
+			} else if (platform === 'linux') {
+				lockCommand = ['gnome-screensaver-command', '-l']
+			}
+
+			runSystemCommand(lockCommand, 'System is locking...', socket)
+		})
 
         // Predefined script: Send system alert
         socket.on('sendAlert', (password: string, message: string) => {
