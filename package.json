@@ -43,14 +43,7 @@
             "entitlementsInherit": "entitlements.mac.plist"
         },
         "win": {
-            "target": [
-                {
-                    "target": "msi",
-                    "arch": [
-                        "x64"
-                    ]
-                }
-            ],
+            "target": "nsis",
             "icon": "assets/tray-icon.ico",
             "requestedExecutionLevel": "requireAdministrator"
         },
