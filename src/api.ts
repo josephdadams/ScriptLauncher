@@ -273,11 +273,26 @@ export function initializeServer(): HttpServer {
             socket.emit('command_result', 'System alert sent.')
         })
 
+        socket.on('stopSystemInfo', () => {
+            //stops gathering the system info
+            clearInterval(systemInfoInterval)
+        })
+
+        socket.on('startSystemInfo', () => {
+            //starts gathering the system info
+            systemInfoInterval = setInterval(async () => {
+                const systemInfo = await getSystemInfo()
+                if (systemInfo) {
+                    io.emit('system_info', systemInfo) // Broadcast to all connected clients
+                }
+            }, 5000) // Emit every 5 seconds
+        })
+
         socket.on('disconnect', () => {})
     })
 
     // Start broadcasting system info to all connected clients every 5 seconds
-    const systemInfoInterval = setInterval(async () => {
+    var systemInfoInterval = setInterval(async () => {
         const systemInfo = await getSystemInfo()
         if (systemInfo) {
             io.emit('system_info', systemInfo) // Broadcast to all connected clients
