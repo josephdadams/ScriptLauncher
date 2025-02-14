@@ -11,6 +11,8 @@ import systeminformation from 'systeminformation'
 const store = new Store()
 const adminPassword = store.get('password')
 
+var systemInfoInterval: NodeJS.Timeout
+
 // Helper function to gather system info
 async function getSystemInfo() {
     try {
@@ -290,14 +292,6 @@ export function initializeServer(): HttpServer {
 
         socket.on('disconnect', () => {})
     })
-
-    // Start broadcasting system info to all connected clients every 5 seconds
-    var systemInfoInterval = setInterval(async () => {
-        const systemInfo = await getSystemInfo()
-        if (systemInfo) {
-            io.emit('system_info', systemInfo) // Broadcast to all connected clients
-        }
-    }, 5000) // Emit every 5 seconds
 
     // Handle graceful shutdown to clear the interval when the server stops
     server.on('close', () => {
