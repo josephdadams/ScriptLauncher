@@ -1,6 +1,8 @@
 import { BrowserWindow } from 'electron'
 import * as path from 'path'
 
+import { fileURLToPath } from 'url'
+
 let settingsWindow: BrowserWindow | null = null
 
 export default function createSettingsWindow() {
@@ -8,6 +10,10 @@ export default function createSettingsWindow() {
         settingsWindow.focus()
         return
     }
+
+    // Define __dirname in ESM
+    const __filename = fileURLToPath(import.meta.url)
+    const __dirname = path.dirname(__filename)
 
     settingsWindow = new BrowserWindow({
         width: 400,
