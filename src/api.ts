@@ -8,6 +8,10 @@ import { Notification } from 'electron'
 
 import systeminformation from 'systeminformation'
 
+import fs from 'fs'
+import path from 'path'
+import os from 'os'
+
 const store = new Store()
 const adminPassword = store.get('password')
 
@@ -69,7 +73,7 @@ function runSystemCommand(
 export function runScript(
     executable: string,
     args: string,
-	stdin: string,
+    stdin: string,
     password: string
 ): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -176,10 +180,17 @@ export function initializeServer(): HttpServer {
 
     // Socket.io connection handling
     io.on('connection', (socket: Socket) => {
+        socket.emit('platform', process.platform)
+
         // Handle execute event
-		socket.on(
+        socket.on(
             'execute',
-            (executable: string, args: string, stdin: string, password: string) => {
+            (
+                executable: string,
+                args: string,
+                stdin: string,
+                password: string
+            ) => {
                 runScript(executable, args, stdin, password)
                     .then((output) => {
                         socket.emit('script_result', output)
@@ -236,25 +247,29 @@ export function initializeServer(): HttpServer {
             runSystemCommand(rebootCommand, 'System is rebooting...', socket)
         })
 
-		//Predefined script: Lock
-		socket.on('lock', (password: string) => {
-			if (password !== adminPassword) {
-				socket.emit('command_result', 'Error: Invalid admin password.')
-				return
-			}
+        //Predefined script: Lock
+        socket.on('lock', (password: string) => {
+            if (password !== adminPassword) {
+                socket.emit('command_result', 'Error: Invalid admin password.')
+                return
+            }
 
-			const platform = process.platform
-			let lockCommand: string[] = []
-			if (platform === 'win32') {
-				lockCommand = ['rundll32.exe', 'user32.dll,LockWorkStation']
-			} else if (platform === 'darwin') {
-				lockCommand = ['osascript', '-e', 'tell application "System Events" to keystroke "q" using {control down, command down}']
-			} else if (platform === 'linux') {
-				lockCommand = ['gnome-screensaver-command', '-l']
-			}
+            const platform = process.platform
+            let lockCommand: string[] = []
+            if (platform === 'win32') {
+                lockCommand = ['rundll32.exe', 'user32.dll,LockWorkStation']
+            } else if (platform === 'darwin') {
+                lockCommand = [
+                    'osascript',
+                    '-e',
+                    'tell application "System Events" to keystroke "q" using {control down, command down}',
+                ]
+            } else if (platform === 'linux') {
+                lockCommand = ['gnome-screensaver-command', '-l']
+            }
 
-			runSystemCommand(lockCommand, 'System is locking...', socket)
-		})
+            runSystemCommand(lockCommand, 'System is locking...', socket)
+        })
 
         // Predefined script: Send system alert
         socket.on('sendAlert', (password: string, message: string) => {
@@ -289,6 +304,132 @@ export function initializeServer(): HttpServer {
                 }
             }, 5000) // Emit every 5 seconds
         })
+
+        socket.on(
+            'moveFile',
+            async (
+                oldPath: string,
+                newPath: string,
+                copyOnly: boolean,
+                password: string
+            ) => {
+                if (password !== adminPassword) {
+                    socket.emit(
+                        'command_result',
+                        'Error: Invalid admin password.'
+                    )
+                    return
+                }
+
+                try {
+                    // Resolve absolute paths
+                    const resolvedOldPath = path.resolve(oldPath)
+                    const resolvedNewPath = path.resolve(newPath)
+
+                    // Ensure the source file exists
+                    if (!fs.existsSync(resolvedOldPath)) {
+                        socket.emit(
+                            'command_result',
+                            'Error: Source file does not exist: ' +
+                                resolvedOldPath
+                        )
+                        return
+                    }
+
+                    // Ensure newPath is not a directory
+                    if (
+                        fs.existsSync(resolvedNewPath) &&
+                        fs.lstatSync(resolvedNewPath).isDirectory()
+                    ) {
+                        socket.emit(
+                            'command_result',
+                            'Error: Destination path is a directory: ' +
+                                resolvedNewPath
+                        )
+                        return
+                    }
+
+                    // OS-specific security checks
+                    if (process.platform === 'win32') {
+                        // Windows-specific system paths
+                        const forbiddenWindowsPaths = [
+                            'C:\\Windows\\',
+                            'C:\\Program Files\\',
+                        ]
+                        if (
+                            forbiddenWindowsPaths.some(
+                                (p) =>
+                                    resolvedOldPath.startsWith(p) ||
+                                    resolvedNewPath.startsWith(p)
+                            )
+                        ) {
+                            socket.emit(
+                                'command_result',
+                                'Error: Moving system-critical files is not allowed on Windows: ' +
+                                    resolvedOldPath
+                            )
+                            return
+                        }
+                    } else {
+                        // Unix-based systems: prevent moving root/system-critical files
+                        const forbiddenUnixPaths = [
+                            '/etc/',
+                            '/sys/',
+                            '/proc/',
+                            '/dev/',
+                            '/bin/',
+                            '/usr/bin/',
+                        ]
+                        if (
+                            forbiddenUnixPaths.some(
+                                (p) =>
+                                    resolvedOldPath.startsWith(p) ||
+                                    resolvedNewPath.startsWith(p)
+                            )
+                        ) {
+                            socket.emit(
+                                'command_result',
+                                'Error: Moving system-critical files is not allowed on Unix-like systems: ' +
+                                    resolvedOldPath
+                            )
+                            return
+                        }
+                    }
+
+                    if (copyOnly) {
+                        // Copy file instead of moving
+                        await fs.promises.copyFile(
+                            resolvedOldPath,
+                            resolvedNewPath
+                        )
+                        socket.emit(
+                            'command_result',
+                            'File copied successfully: ' + resolvedNewPath
+                        )
+                    } else {
+                        // Move the file
+                        const { moveFile } = await import('move-file')
+                        await moveFile(resolvedOldPath, resolvedNewPath)
+                        socket.emit(
+                            'command_result',
+                            'File moved successfully: ' + resolvedNewPath
+                        )
+                    }
+                } catch (err: any) {
+                    if (process.platform === 'win32' && err.code === 'EPERM') {
+                        socket.emit(
+                            'command_result',
+                            'Error: Permission denied (Windows EPERM). Try running as Administrator.'
+                        )
+                    } else {
+                        socket.emit(
+                            'command_result',
+                            `Error processing file: ${err.message}`
+                        )
+                    }
+                }
+            }
+        )
 
         socket.on('disconnect', () => {})
     })

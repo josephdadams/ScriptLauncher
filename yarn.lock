@@ -3120,6 +3120,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"move-file@npm:^3.1.0":
+  version: 3.1.0
+  resolution: "move-file@npm:3.1.0"
+  dependencies:
+    path-exists: "npm:^5.0.0"
+  checksum: 10c0/4c86cf82730f5770609adf9d8a58767ab16def48bf6610b0f895d51e95cf007fb3962beffd2771c171927607d2c009cdace35b36220b48a881b3c68a8fb60a96
+  languageName: node
+  linkType: hard
+
 "ms@npm:2.0.0":
   version: 2.0.0
   resolution: "ms@npm:2.0.0"
@@ -3404,6 +3413,13 @@ __metadata:
   version: 3.0.0
   resolution: "path-exists@npm:3.0.0"
   checksum: 10c0/17d6a5664bc0a11d48e2b2127d28a0e58822c6740bde30403f08013da599182289c56518bec89407e3f31d3c2b6b296a4220bc3f867f0911fee6952208b04167
+  languageName: node
+  linkType: hard
+
+"path-exists@npm:^5.0.0":
+  version: 5.0.0
+  resolution: "path-exists@npm:5.0.0"
+  checksum: 10c0/b170f3060b31604cde93eefdb7392b89d832dfbc1bed717c9718cbe0f230c1669b7e75f87e19901da2250b84d092989a0f9e44d2ef41deb09aa3ad28e691a40a
   languageName: node
   linkType: hard
 
@@ -3753,6 +3769,7 @@ __metadata:
     electron-builder: "npm:^25.1.8"
     electron-store: "npm:^8.0.0"
     express: "npm:^4.21.2"
+    move-file: "npm:^3.1.0"
     prettier: "npm:^3.4.2"
     socket.io: "npm:^4.8.1"
     systeminformation: "npm:^5.25.11"

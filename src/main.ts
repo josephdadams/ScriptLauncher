@@ -3,13 +3,13 @@ declare global {
 }
 
 import { app, BrowserWindow } from 'electron'
-import createTray from './tray'
+import createTray from './tray.js'
 import { showNotification } from './notification'
-import { initializeIpcHandlers } from './ipcHandlers' // Import IPC handlers if needed
+import { initializeIpcHandlers } from './ipcHandlers.js' // Import IPC handlers if needed
 
 import Store from 'electron-store'
 
-import { initializeServer } from './api'
+import { initializeServer } from './api.js'
 
 app.on('ready', () => {
     if (process.platform === 'darwin') {

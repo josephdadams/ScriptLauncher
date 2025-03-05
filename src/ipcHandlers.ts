@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron'
 import Store from 'electron-store'
-import { defaultSettings } from './defaults' // Import default settings
+import { defaultSettings } from './defaults.js' // Import default settings
 
 const store = new Store({ defaults: defaultSettings })
 

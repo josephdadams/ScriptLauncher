@@ -1,7 +1,13 @@
 import { Tray, Menu, nativeImage, app } from 'electron'
 import * as path from 'path'
 import Store from 'electron-store'
-import createSettingsWindow from './settings' // Import the createSettingsWindow function
+import createSettingsWindow from './settings.js' // Import the createSettingsWindow function
+
+import { fileURLToPath } from 'url'
+
+// Define __dirname in ESM
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 let tray: Tray | null = null
 const store = new Store()
