@@ -5,9 +5,6 @@ on:
         tags:
             - 'v*.*.*' # Trigger on version tags like v1.0.0
 
-permissions:
-    contents: write
-
 jobs:
     build_desktop:
         name: Build Desktop on ${{ matrix.os }}
@@ -44,14 +41,88 @@ jobs:
               run: |
                   security find-identity -v -p codesigning
 
-            - name: Build and Release
+            - name: Build for Desktop
               uses: samuelmeuli/action-electron-builder@v1.6.0
               with:
                   github_token: ${{ secrets.GITHUB_TOKEN }}
-                  release: true
+                  release: false # Prevent auto-release in electron-builder
               env:
                   DEBUG: electron-notarize*
                   APPLE_ID: ${{ secrets.APPLE_ID }}
                   APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
-                  APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
                   APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+            - name: Rename and Upload Artifacts
+              run: |
+                  VERSION=${{ github.ref_name }}
+                  mkdir release
+
+                  if [[ "$RUNNER_OS" == "Linux" ]]; then
+                      mv dist/*.AppImage "release/ScriptLauncher-linux-x64-$VERSION.AppImage"
+                  elif [[ "$RUNNER_OS" == "Windows" ]]; then
+                      mv dist/*.exe "release/ScriptLauncher-windows-x64-$VERSION.exe"
+                  elif [[ "$RUNNER_OS" == "macOS" ]]; then
+                      mv dist/*-x64.dmg "release/ScriptLauncher-mac-intel-$VERSION.dmg" || true
+                      mv dist/*-arm64.dmg "release/ScriptLauncher-mac-silicon-$VERSION.dmg" || true
+                      mv dist/*-universal.dmg "release/ScriptLauncher-mac-universal-$VERSION.dmg" || true
+                  fi
+
+            - name: Upload Desktop Artifacts
+              uses: actions/upload-artifact@v3
+              with:
+                  name: ScriptLauncher-desktop-${{ github.ref_name }}
+                  path: release/*
+
+    build_rpi:
+        name: Build for Raspberry Pi (ARM64)
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+
+            - name: Set up QEMU
+              uses: docker/setup-qemu-action@v2
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v3
+              with:
+                  node-version: 20
+
+            - name: Install dependencies
+              run: yarn install --production
+
+            - name: Build Electron App for ARM64
+              run: |
+                  yarn run electron-builder --linux --arm64
+
+            - name: Rename ARM64 Artifact
+              run: |
+                  VERSION=${{ github.ref_name }}
+                  mkdir release
+                  mv dist/*.AppImage "release/ScriptLauncher-rpi-arm64-$VERSION.AppImage"
+
+            - name: Upload ARM64 Artifact
+              uses: actions/upload-artifact@v3
+              with:
+                  name: ScriptLauncher-rpi-${{ github.ref_name }}
+                  path: release/*
+
+    release:
+        name: Create GitHub Release
+        runs-on: ubuntu-latest
+        needs: [build_desktop, build_rpi]
+        steps:
+            - name: Download All Artifacts
+              uses: actions/download-artifact@v3
+              with:
+                  path: release
+
+            - name: Create GitHub Release
+              uses: softprops/action-gh-release@v1
+              with:
+                  tag_name: ${{ github.ref_name }}
+                  name: 'ScriptLauncher v${{ github.ref_name }}'
+                  body: "Official release of ScriptLauncher v${{ github.ref_name}}.\n\nDownload the appropriate version for your OS below."
+                  files: release/**/*
+                  draft: true
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
