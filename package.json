@@ -50,13 +50,33 @@
             "artifactName": "ScriptLauncher-${version}-mac-${arch}.${ext}"
         },
         "win": {
-            "target": "portable",
+            "target": [
+                {
+                    "target": "nsis",
+                    "arch": [
+                        "x64"
+                    ]
+                }
+            ],
             "icon": "assets/tray-icon.ico",
             "requestedExecutionLevel": "requireAdministrator",
             "artifactName": "ScriptLauncher-${version}-windows-${arch}.${ext}",
             "signingHashAlgorithms": [],
             "forceCodeSigning": false,
-            "publisherName": "Joseph Adams"
+            "publisherName": "Joseph Adams",
+            "verifyUpdateCodeSignature": false
+        },
+        "nsis": {
+            "oneClick": false,
+            "perMachine": false,
+            "allowToChangeInstallationDirectory": true,
+            "deleteAppDataOnUninstall": true,
+            "runAfterFinish": true,
+            "createDesktopShortcut": true,
+            "createStartMenuShortcut": true,
+            "shortcutName": "ScriptLauncher",
+            "menuCategory": true,
+            "artifactName": "ScriptLauncher-${version}-windows-setup.${ext}"
         },
         "linux": {
             "target": [
