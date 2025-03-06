@@ -33,10 +33,14 @@ jobs:
 
             - name: Clear Electron Builder Cache (Windows)
               if: runner.os == 'Windows'
-              run: |
-                  rimraf ~/.cache/electron-builder
-                  rimraf "C:\Users\runneradmin\AppData\Local\electron-builder\Cache"
               shell: pwsh
+              run: |
+                  Remove-Item -Recurse -Force "$env:LOCALAPPDATA\electron-builder\Cache"
+                  Remove-Item -Recurse -Force "$env:USERPROFILE\.cache\electron-builder"
+            
+            - name: Clear Electron Builder Cache (Linux/macOS)
+              if: runner.os != 'Windows'
+              run: rm -rf ~/.cache/electron-builder
 
             - name: Install NSIS (Windows)
               if: runner.os == 'Windows'
