@@ -58,6 +58,7 @@ jobs:
                   APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
             - name: Rename and Upload Artifacts
+              shell: bash
               run: |
                   VERSION=${{ github.ref_name }}
                   mkdir release
