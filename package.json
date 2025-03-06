@@ -64,20 +64,19 @@
             "signingHashAlgorithms": [],
             "forceCodeSigning": false,
             "publisherName": "Joseph Adams",
-            "verifyUpdateCodeSignature": false
-        },
-        "nsis": {
-            "oneClick": false,
-            "perMachine": false,
-            "allowToChangeInstallationDirectory": true,
-            "deleteAppDataOnUninstall": true,
-            "runAfterFinish": true,
-            "createDesktopShortcut": true,
-            "createStartMenuShortcut": true,
-            "shortcutName": "ScriptLauncher",
-            "menuCategory": true,
-            "artifactName": "ScriptLauncher-${version}-windows-setup.${ext}",
-            "customNsisBinary": "C:\\Program Files (x86)\\NSIS\\makensis.exe"
+            "verifyUpdateCodeSignature": false,
+            "nsis": {
+                "oneClick": false,
+                "perMachine": false,
+                "allowToChangeInstallationDirectory": true,
+                "deleteAppDataOnUninstall": true,
+                "runAfterFinish": true,
+                "createDesktopShortcut": true,
+                "createStartMenuShortcut": true,
+                "shortcutName": "ScriptLauncher",
+                "menuCategory": true,
+                "artifactName": "ScriptLauncher-${version}-windows-setup.${ext}"
+            }
         },
         "linux": {
             "target": [
