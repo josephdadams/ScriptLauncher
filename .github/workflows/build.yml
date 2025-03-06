@@ -38,6 +38,9 @@ jobs:
                   rm -rf "C:\Users\runneradmin\AppData\Local\electron-builder\Cache"
               shell: bash
 
+            - name: Clean Electron Builder Cache
+              run: yarn electron-builder install-app-deps
+
             # macOS-specific steps for code signing and notarization
             - name: Import Apple Developer Certificate (macOS only)
               if: matrix.os == 'macos-latest'
