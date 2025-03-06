@@ -35,11 +35,10 @@ jobs:
               run: |
                 echo "🧹 Clearing Electron Builder Cache..."
                 rm -rf ~/.cache/electron-builder || true
-                rm -rf "$LOCALAPPDATA/electron-builder/Cache/nsis" || true
               if: runner.os == 'Windows'
               shell: bash
 
-            - name: Install NSIS (Windows)
+            - name: Install App Dependencies (Windows)
               if: runner.os == 'Windows'
               run: yarn electron-builder install-app-deps
 

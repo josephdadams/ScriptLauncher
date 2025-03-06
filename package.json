@@ -46,7 +46,7 @@
             "artifactName": "ScriptLauncher-${version}-mac-${arch}.${ext}"
         },
         "win": {
-            "target": "nsis",
+            "target": "portable",
             "icon": "assets/tray-icon.ico",
             "requestedExecutionLevel": "requireAdministrator",
             "artifactName": "ScriptLauncher-${version}-windows.${ext}"
