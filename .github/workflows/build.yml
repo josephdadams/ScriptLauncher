@@ -55,11 +55,11 @@ jobs:
 
             - name: Build for Desktop (Windows)
               if: runner.os == 'Windows'
-              run: yarn electron-builder --win --max-attempts=3
+              run: yarn electron-builder --win
 
             - name: Build for Desktop (macOS)
               if: runner.os == 'macOS'
-              run: yarn electron-builder --mac --max-attempts=3
+              run: yarn electron-builder --mac
               env:
                   DEBUG: electron-notarize*
                   APPLE_ID: ${{ secrets.APPLE_ID }}
@@ -68,7 +68,7 @@ jobs:
 
             - name: Build for Desktop (Linux)
               if: runner.os == 'Linux'
-              run: yarn electron-builder --linux --max-attempts=3
+              run: yarn electron-builder --linux
 
             - name: Rename and Upload Artifacts
               shell: bash
