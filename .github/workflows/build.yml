@@ -33,8 +33,8 @@ jobs:
 
             - name: Clear Electron Builder Cache (Fix NSIS Issues)
               run: |
-                echo "🧹 Clearing Electron Builder Cache..."
-                rm -rf ~/.cache/electron-builder || true
+                  echo "🧹 Clearing Electron Builder Cache..."
+                  rm -rf ~/.cache/electron-builder || true
               if: runner.os == 'Windows'
               shell: bash
 
@@ -114,7 +114,7 @@ jobs:
 
             - name: Build Electron App for ARM64
               run: |
-                yarn electron-builder --linux --arm64 --publish=never || (echo "❌ ARM64 build failed!" && exit 1)
+                  yarn electron-builder --linux --arm64 --publish=never || (echo "❌ ARM64 build failed!" && exit 1)
 
             - name: Upload ARM64 Artifact
               uses: actions/upload-artifact@v4
@@ -139,7 +139,7 @@ jobs:
               uses: softprops/action-gh-release@v1
               with:
                   tag_name: ${{ github.ref_name }}
-                  name: "ScriptLauncher v${{ github.ref_name }}"
+                  name: 'ScriptLauncher v${{ github.ref_name }}'
                   body: "Official release of ScriptLauncher v${{ github.ref_name}}.\n\nDownload the appropriate version for your OS below."
                   files: release/**/*
                   draft: true

@@ -16,6 +16,10 @@
     "build": {
         "appId": "com.josephadams.scriptlauncher",
         "productName": "scriptlauncher",
+        "directories": {
+            "output": "out/",
+            "buildResources": "assets/"
+        },
         "files": [
             "dist/**/*",
             "public/**/*",
