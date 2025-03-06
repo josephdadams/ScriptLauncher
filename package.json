@@ -21,6 +21,7 @@
             "public/**/*",
             "assets/**/*"
         ],
+        "artifactName": "ScriptLauncher-${version}-${os}-${arch}.${ext}",
         "mac": {
             "target": [
                 {
@@ -41,12 +42,14 @@
             "hardenedRuntime": true,
             "gatekeeperAssess": true,
             "entitlements": "entitlements.mac.plist",
-            "entitlementsInherit": "entitlements.mac.plist"
+            "entitlementsInherit": "entitlements.mac.plist",
+            "artifactName": "ScriptLauncher-${version}-mac-${arch}.${ext}"
         },
         "win": {
             "target": "nsis",
             "icon": "assets/tray-icon.ico",
-            "requestedExecutionLevel": "requireAdministrator"
+            "requestedExecutionLevel": "requireAdministrator",
+            "artifactName": "ScriptLauncher-${version}-windows.${ext}"
         },
         "linux": {
             "target": [
@@ -58,7 +61,8 @@
                     ]
                 }
             ],
-            "icon": "assets/tray-icon.png"
+            "icon": "assets/tray-icon.png",
+            "artifactName": "ScriptLauncher-${version}-linux-${arch}.${ext}"
         },
         "generateUpdatesFilesForAllChannels": false
     },
