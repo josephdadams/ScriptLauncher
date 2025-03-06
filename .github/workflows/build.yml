@@ -35,26 +35,34 @@ jobs:
               if: runner.os == 'Windows'
               shell: pwsh
               run: |
-                  if (Test-Path "$env:LOCALAPPDATA\electron-builder\Cache") {
-                      Remove-Item -Recurse -Force "$env:LOCALAPPDATA\electron-builder\Cache"
+                  $paths = @(
+                      "$env:LOCALAPPDATA\electron-builder\Cache",
+                      "$env:USERPROFILE\.cache\electron-builder"
+                  )
+                  foreach ($path in $paths) {
+                      if (Test-Path $path) {
+                          Remove-Item -Recurse -Force $path -ErrorAction Ignore
+                          Write-Host "Cleared cache: $path"
+                      }
                   }
-                  if (Test-Path "$env:USERPROFILE\.cache\electron-builder") {
-                      Remove-Item -Recurse -Force "$env:USERPROFILE\.cache\electron-builder"
-                  }
-            
-            - name: Clear Electron Builder Cache (Linux/macOS)
-              if: runner.os != 'Windows'
-              run: rm -rf ~/.cache/electron-builder || true
 
             - name: Install NSIS (Windows)
               if: runner.os == 'Windows'
-              run: choco install nsis --no-progress -y
+              shell: pwsh
+              run: |
+                  if (-Not (Test-Path "C:\Program Files (x86)\NSIS\Bin\makensis.exe")) {
+                      choco install nsis --no-progress -y
+                  } else {
+                      Write-Host "NSIS already installed, skipping..."
+                  }
 
-            - name: Add NSIS to PATH (Windows)
+            - name: Add System NSIS to PATH (Windows)
               if: runner.os == 'Windows'
               shell: pwsh
               run: |
                   echo "C:\Program Files (x86)\NSIS\Bin" | Out-File -Append -Encoding utf8 $env:GITHUB_PATH
+                  Write-Host "Using NSIS version:"
+                  makensis.exe /VERSION
 
             - name: Install Electron Builder Dependencies
               run: yarn electron-builder install-app-deps
@@ -129,9 +137,12 @@ jobs:
             - name: Compile TypeScript
               run: yarn build
 
-            - name: Build Electron App for ARM64
+            - name: Build Electron App for ARM64 (with retry)
               run: |
-                  yarn electron-builder --linux --arm64 --publish=never || (echo "❌ ARM64 build failed! Retrying..." && sleep 10 && yarn electron-builder --linux --arm64 --publish=never)
+                  yarn electron-builder --linux --arm64 --publish=never || (
+                      echo "❌ ARM64 build failed! Retrying in 10 seconds..." && sleep 10 &&
+                      yarn electron-builder --linux --arm64 --publish=never
+                  )
 
             - name: Upload ARM64 Artifact
               uses: actions/upload-artifact@v4
