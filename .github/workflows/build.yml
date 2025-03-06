@@ -78,14 +78,11 @@ jobs:
               if: runner.os == 'Linux'
               run: yarn electron-builder --linux --publish=never
 
-            - name: List Built Files
-              run: ls -lah dist/
-
             - name: Upload Desktop Artifacts
               uses: actions/upload-artifact@v4
               with:
                   name: ScriptLauncher-desktop-${{ github.ref_name }}
-                  path: release/*
+                  path: dist/*
 
     build_rpi:
         name: Build for Raspberry Pi (ARM64)
@@ -117,26 +114,11 @@ jobs:
               run: |
                 yarn electron-builder --linux --arm64 --publish=never || (echo "❌ ARM64 build failed!" && exit 1)
 
-            - name: List Built Files (Debugging)
-              run: ls -lah dist/
-
-            - name: Rename ARM64 Artifact
-              shell: bash
-              run: |
-                  VERSION=${{ github.ref_name }}
-                  mkdir -p release
-                  if [[ -f dist/*.AppImage ]]; then
-                      mv dist/*.AppImage "release/ScriptLauncher-rpi-arm64-$VERSION.AppImage"
-                  else
-                      echo "❌ No ARM64 AppImage found!"
-                      exit 1
-                  fi
-
             - name: Upload ARM64 Artifact
               uses: actions/upload-artifact@v4
               with:
                   name: ScriptLauncher-rpi-${{ github.ref_name }}
-                  path: release/*
+                  path: dist/*
 
     release:
         name: Create GitHub Release
