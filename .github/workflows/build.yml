@@ -34,11 +34,15 @@ jobs:
             - name: Clear Electron Builder Cache (Windows)
               if: runner.os == 'Windows'
               run: |
-                  rm -rf ~/.cache/electron-builder
-                  rm -rf "C:\Users\runneradmin\AppData\Local\electron-builder\Cache"
-              shell: bash
+                  rimraf ~/.cache/electron-builder
+                  rimraf "C:\Users\runneradmin\AppData\Local\electron-builder\Cache"
+              shell: pwsh
 
-            - name: Clean Electron Builder Cache
+            - name: Install NSIS (Windows)
+              if: runner.os == 'Windows'
+              run: choco install nsis --no-progress -y
+
+            - name: Install Electron Builder Dependencies
               run: yarn electron-builder install-app-deps
 
             # macOS-specific steps for code signing and notarization
@@ -64,7 +68,7 @@ jobs:
 
             - name: Build for Desktop (Windows)
               if: runner.os == 'Windows'
-              run: yarn electron-builder --win portable --publish=never
+              run: yarn electron-builder --win nsis --publish=never
 
             - name: Build for Desktop (macOS)
               if: runner.os == 'macOS'
@@ -113,7 +117,7 @@ jobs:
 
             - name: Build Electron App for ARM64
               run: |
-                  yarn electron-builder --linux --arm64 --publish=never || (echo "❌ ARM64 build failed!" && exit 1)
+                  yarn electron-builder --linux --arm64 --publish=never || (echo "❌ ARM64 build failed! Retrying..." && sleep 10 && yarn electron-builder --linux --arm64 --publish=never)
 
             - name: Upload ARM64 Artifact
               uses: actions/upload-artifact@v4
