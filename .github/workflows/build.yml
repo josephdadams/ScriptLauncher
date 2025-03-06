@@ -50,6 +50,12 @@ jobs:
               if: runner.os == 'Windows'
               run: choco install nsis --no-progress -y
 
+            - name: Add NSIS to PATH (Windows)
+              if: runner.os == 'Windows'
+              shell: pwsh
+              run: |
+                  echo "C:\Program Files (x86)\NSIS\Bin" | Out-File -Append -Encoding utf8 $env:GITHUB_PATH
+
             - name: Install Electron Builder Dependencies
               run: yarn electron-builder install-app-deps
 
