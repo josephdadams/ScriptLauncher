@@ -72,7 +72,10 @@
         "shortcutName": "ScriptLauncher",
         "menuCategory": true,
         "artifactName": "ScriptLauncher-${version}-windows-setup.${ext}",
-        "customNsisBinary": null
+        "customNsisBinary": {
+            "version": "3.10.0",
+            "url": "C:\\Program Files (x86)\\NSIS\\makensis.exe"
+        }
       },
       "linux": {
         "target": [
