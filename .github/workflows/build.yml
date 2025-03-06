@@ -31,6 +31,15 @@ jobs:
             - name: Install dependencies
               run: yarn install --immutable
 
+            - name: Clear Electron Builder Cache (Fix NSIS Issues)
+              run: rm -rf ~/.cache/electron-builder || true
+              if: runner.os == 'Windows'
+              shell: bash
+
+            - name: Install NSIS (Windows)
+              if: runner.os == 'Windows'
+              run: yarn electron-builder install-app-deps
+
             # macOS-specific steps for code signing and notarization
             - name: Import Apple Developer Certificate (macOS only)
               if: matrix.os == 'macos-latest'
@@ -47,8 +56,7 @@ jobs:
 
             - name: List Certificates in Keychain (macOS only)
               if: matrix.os == 'macos-latest'
-              run: |
-                  security find-identity -v -p codesigning
+              run: security find-identity -v -p codesigning
 
             - name: Compile TypeScript
               run: yarn build
@@ -70,21 +78,8 @@ jobs:
               if: runner.os == 'Linux'
               run: yarn electron-builder --linux --publish=never
 
-            - name: Rename and Upload Artifacts
-              shell: bash
-              run: |
-                  VERSION=${{ github.ref_name }}
-                  mkdir release
-
-                  if [[ "$RUNNER_OS" == "Linux" ]]; then
-                      mv dist/*.AppImage "release/ScriptLauncher-linux-x64-$VERSION.AppImage"
-                  elif [[ "$RUNNER_OS" == "Windows" ]]; then
-                      mv dist/*.exe "release/ScriptLauncher-windows-x64-$VERSION.exe"
-                  elif [[ "$RUNNER_OS" == "macOS" ]]; then
-                      mv dist/*-x64.dmg "release/ScriptLauncher-mac-intel-$VERSION.dmg" || true
-                      mv dist/*-arm64.dmg "release/ScriptLauncher-mac-silicon-$VERSION.dmg" || true
-                      mv dist/*-universal.dmg "release/ScriptLauncher-mac-universal-$VERSION.dmg" || true
-                  fi
+            - name: List Built Files
+              run: ls -lah dist/
 
             - name: Upload Desktop Artifacts
               uses: actions/upload-artifact@v4
@@ -119,14 +114,23 @@ jobs:
               run: yarn build
 
             - name: Build Electron App for ARM64
-              run: yarn electron-builder --linux --arm64 --publish=never
+              run: |
+                yarn electron-builder --linux --arm64 --publish=never || (echo "❌ ARM64 build failed!" && exit 1)
+
+            - name: List Built Files (Debugging)
+              run: ls -lah dist/
 
             - name: Rename ARM64 Artifact
               shell: bash
               run: |
                   VERSION=${{ github.ref_name }}
                   mkdir -p release
-                  mv dist/*.AppImage "release/ScriptLauncher-rpi-arm64-$VERSION.AppImage"
+                  if [[ -f dist/*.AppImage ]]; then
+                      mv dist/*.AppImage "release/ScriptLauncher-rpi-arm64-$VERSION.AppImage"
+                  else
+                      echo "❌ No ARM64 AppImage found!"
+                      exit 1
+                  fi
 
             - name: Upload ARM64 Artifact
               uses: actions/upload-artifact@v4
@@ -143,6 +147,9 @@ jobs:
               uses: actions/download-artifact@v4
               with:
                   path: release
+
+            - name: List All Release Files (Debugging)
+              run: ls -lah release/
 
             - name: Create GitHub Release
               uses: softprops/action-gh-release@v1
