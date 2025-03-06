@@ -6,112 +6,105 @@
     "main": "dist/main.js",
     "type": "module",
     "scripts": {
-        "start": "yarn build && electron .",
-        "build": "tsc",
-        "dev": "concurrently \"tsc -w\" \"wait-on dist/main.js && electron .\"",
-        "format": "prettier -w .",
-        "lint:raw": "eslint --ext .ts --ext .js --ignore-pattern dist --ignore-pattern pkg",
-        "lint": "yarn lint:raw ."
+      "start": "yarn build && electron .",
+      "build": "tsc",
+      "dev": "concurrently \"tsc -w\" \"wait-on dist/main.js && electron .\"",
+      "format": "prettier -w .",
+      "lint:raw": "eslint --ext .ts --ext .js --ignore-pattern dist --ignore-pattern pkg",
+      "lint": "yarn lint:raw ."
     },
     "build": {
-        "appId": "com.josephadams.scriptlauncher",
-        "productName": "scriptlauncher",
-        "directories": {
-            "output": "out/",
-            "buildResources": "assets/"
-        },
-        "files": [
-            "dist/**/*",
-            "public/**/*",
-            "assets/**/*"
+      "appId": "com.josephadams.scriptlauncher",
+      "productName": "scriptlauncher",
+      "directories": {
+        "output": "out/",
+        "buildResources": "assets/"
+      },
+      "files": [
+        "dist/**/*",
+        "public/**/*",
+        "assets/**/*"
+      ],
+      "artifactName": "ScriptLauncher-${version}-${os}-${arch}.${ext}",
+      "mac": {
+        "target": [
+          {
+            "target": "dmg",
+            "arch": ["x64", "arm64"]
+          }
         ],
-        "artifactName": "ScriptLauncher-${version}-${os}-${arch}.${ext}",
-        "mac": {
-            "target": [
-                {
-                    "target": "dmg",
-                    "arch": [
-                        "x64",
-                        "arm64"
-                    ]
-                }
-            ],
-            "category": "public.app-category.utilities",
-            "icon": "assets/tray-icon.png",
-            "identity": "Joseph Adams (R2PY2DC3A4)",
-            "extendInfo": {
-                "NSApplicationSupportsSecureRestorableState": true,
-                "electronTeamId": "R2PY2DC3A4"
-            },
-            "hardenedRuntime": true,
-            "gatekeeperAssess": true,
-            "entitlements": "entitlements.mac.plist",
-            "entitlementsInherit": "entitlements.mac.plist",
-            "artifactName": "ScriptLauncher-${version}-mac-${arch}.${ext}"
+        "category": "public.app-category.utilities",
+        "icon": "assets/tray-icon.png",
+        "identity": "Joseph Adams (R2PY2DC3A4)",
+        "extendInfo": {
+          "NSApplicationSupportsSecureRestorableState": true,
+          "electronTeamId": "R2PY2DC3A4"
         },
-        "win": {
-            "target": [
-                {
-                    "target": "nsis",
-                    "arch": [
-                        "x64"
-                    ]
-                }
-            ],
-            "icon": "assets/tray-icon.ico",
-            "requestedExecutionLevel": "requireAdministrator",
-            "artifactName": "ScriptLauncher-${version}-windows-${arch}.${ext}",
-            "signingHashAlgorithms": [],
-            "forceCodeSigning": false,
-            "publisherName": "Joseph Adams",
-            "verifyUpdateCodeSignature": false,
-            "nsis": {
-                "oneClick": false,
-                "perMachine": false,
-                "allowToChangeInstallationDirectory": true,
-                "deleteAppDataOnUninstall": true,
-                "runAfterFinish": true,
-                "createDesktopShortcut": true,
-                "createStartMenuShortcut": true,
-                "shortcutName": "ScriptLauncher",
-                "menuCategory": true,
-                "artifactName": "ScriptLauncher-${version}-windows-setup.${ext}"
-            }
-        },
-        "linux": {
-            "target": [
-                {
-                    "target": "AppImage",
-                    "arch": [
-                        "x64",
-                        "arm64"
-                    ]
-                }
-            ],
-            "icon": "assets/tray-icon.png",
-            "artifactName": "ScriptLauncher-${version}-linux-${arch}.${ext}",
-            "executableName": "scriptlauncher"
-        },
-        "generateUpdatesFilesForAllChannels": false
+        "hardenedRuntime": true,
+        "gatekeeperAssess": true,
+        "entitlements": "entitlements.mac.plist",
+        "entitlementsInherit": "entitlements.mac.plist",
+        "artifactName": "ScriptLauncher-${version}-mac-${arch}.${ext}"
+      },
+      "win": {
+        "target": [
+          {
+            "target": "nsis",
+            "arch": ["x64"]
+          }
+        ],
+        "icon": "assets/tray-icon.ico",
+        "requestedExecutionLevel": "requireAdministrator",
+        "artifactName": "ScriptLauncher-${version}-windows-${arch}.${ext}",
+        "signingHashAlgorithms": [],
+        "forceCodeSigning": false,
+        "publisherName": "Joseph Adams",
+        "verifyUpdateCodeSignature": false
+      },
+      "nsis": {
+        "oneClick": false,
+        "perMachine": false,
+        "allowToChangeInstallationDirectory": true,
+        "deleteAppDataOnUninstall": true,
+        "runAfterFinish": true,
+        "createDesktopShortcut": true,
+        "createStartMenuShortcut": true,
+        "shortcutName": "ScriptLauncher",
+        "menuCategory": true,
+        "artifactName": "ScriptLauncher-${version}-windows-setup.${ext}",
+        "customNsisBinary": null
+      },
+      "linux": {
+        "target": [
+          {
+            "target": "AppImage",
+            "arch": ["x64", "arm64"]
+          }
+        ],
+        "icon": "assets/tray-icon.png",
+        "artifactName": "ScriptLauncher-${version}-linux-${arch}.${ext}",
+        "executableName": "scriptlauncher"
+      },
+      "generateUpdatesFilesForAllChannels": false
     },
     "dependencies": {
-        "electron-store": "^8.0.0",
-        "express": "^4.21.2",
-        "move-file": "^3.1.0",
-        "socket.io": "^4.8.1",
-        "systeminformation": "^5.25.11"
+      "electron-store": "^8.0.0",
+      "express": "^4.21.2",
+      "move-file": "^3.1.0",
+      "socket.io": "^4.8.1",
+      "systeminformation": "^5.25.11"
     },
     "devDependencies": {
-        "@electron/notarize": "^2.5.0",
-        "@types/express": "^5.0.0",
-        "@types/node": "^18.0.0",
-        "concurrently": "^8.0.0",
-        "electron": "33.2.1",
-        "electron-builder": "^25.1.8",
-        "prettier": "^3.4.2",
-        "ts-node": "^10.0.0",
-        "typescript": "^5.7.3",
-        "wait-on": "^7.0.0"
+      "@electron/notarize": "^2.5.0",
+      "@types/express": "^5.0.0",
+      "@types/node": "^18.0.0",
+      "concurrently": "^8.0.0",
+      "electron": "33.2.1",
+      "electron-builder": "^25.1.8",
+      "prettier": "^3.4.2",
+      "ts-node": "^10.0.0",
+      "typescript": "^5.7.3",
+      "wait-on": "^7.0.0"
     },
     "packageManager": "yarn@4.6.0"
-}
+  }
