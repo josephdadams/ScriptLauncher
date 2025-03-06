@@ -61,7 +61,7 @@ jobs:
 
             - name: Build for Desktop (Windows)
               if: runner.os == 'Windows'
-              run: yarn electron-builder --win portable --publish=never --config.nsis=false
+              run: yarn electron-builder --win portable --publish=never
 
             - name: Build for Desktop (macOS)
               if: runner.os == 'macOS'
