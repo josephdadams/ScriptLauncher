@@ -115,6 +115,9 @@ jobs:
             - name: Ensure electron-builder is in PATH
               run: echo "$(yarn bin)" >> $GITHUB_PATH
 
+            - name: Compile TypeScript
+              run: yarn build
+
             - name: Build Electron App for ARM64
               run: yarn electron-builder --linux --arm64
 
