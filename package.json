@@ -53,7 +53,8 @@
             "target": "portable",
             "icon": "assets/tray-icon.ico",
             "requestedExecutionLevel": "requireAdministrator",
-            "artifactName": "ScriptLauncher-${version}-windows.${ext}"
+            "artifactName": "ScriptLauncher-${version}-windows-${arch}.${ext}",
+            "publisherName": "Joseph Adams"
         },
         "linux": {
             "target": [
