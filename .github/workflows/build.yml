@@ -68,7 +68,7 @@ jobs:
                   fi
 
             - name: Upload Desktop Artifacts
-              uses: actions/upload-artifact@v3
+              uses: actions/upload-artifact@v4
               with:
                   name: ScriptLauncher-desktop-${{ github.ref_name }}
                   path: release/*
@@ -101,7 +101,7 @@ jobs:
                   mv dist/*.AppImage "release/ScriptLauncher-rpi-arm64-$VERSION.AppImage"
 
             - name: Upload ARM64 Artifact
-              uses: actions/upload-artifact@v3
+              uses: actions/upload-artifact@v4
               with:
                   name: ScriptLauncher-rpi-${{ github.ref_name }}
                   path: release/*
@@ -112,7 +112,7 @@ jobs:
         needs: [build_desktop, build_rpi]
         steps:
             - name: Download All Artifacts
-              uses: actions/download-artifact@v3
+              uses: actions/download-artifact@v4
               with:
                   path: release
 
