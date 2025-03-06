@@ -7,8 +7,6 @@ on:
 
 permissions:
     contents: write
-    packages: write
-    actions: read
 
 jobs:
     build_desktop:
@@ -19,53 +17,13 @@ jobs:
                 os: [windows-latest, macos-latest, ubuntu-latest]
         steps:
             - uses: actions/checkout@v3
-
             - name: Setup Node.js
               uses: actions/setup-node@v3
               with:
                   node-version: 20
 
-            - name: Install Yarn v4
-              run: corepack enable && corepack prepare yarn@4.6.0 --activate
-
             - name: Install dependencies
-              run: yarn install --immutable
-
-            - name: Clear Electron Builder Cache (Windows)
-              if: runner.os == 'Windows'
-              shell: pwsh
-              run: |
-                  $paths = @(
-                      "$env:LOCALAPPDATA\electron-builder\Cache",
-                      "$env:USERPROFILE\.cache\electron-builder"
-                  )
-                  foreach ($path in $paths) {
-                      if (Test-Path $path) {
-                          Remove-Item -Recurse -Force $path -ErrorAction Ignore
-                          Write-Host "Cleared cache: $path"
-                      }
-                  }
-
-            - name: Install NSIS (Windows)
-              if: runner.os == 'Windows'
-              shell: pwsh
-              run: |
-                  if (-Not (Test-Path "C:\Program Files (x86)\NSIS\Bin\makensis.exe")) {
-                      choco install nsis --no-progress -y
-                  } else {
-                      Write-Host "NSIS already installed, skipping..."
-                  }
-
-            - name: Add System NSIS to PATH (Windows)
-              if: runner.os == 'Windows'
-              shell: pwsh
-              run: |
-                  echo "C:\Program Files (x86)\NSIS\Bin" | Out-File -Append -Encoding utf8 $env:GITHUB_PATH
-                  Write-Host "Using NSIS version:"
-                  makensis.exe /VERSION
-
-            - name: Install Electron Builder Dependencies
-              run: yarn electron-builder install-app-deps
+              run: yarn install --production
 
             # macOS-specific steps for code signing and notarization
             - name: Import Apple Developer Certificate (macOS only)
@@ -83,93 +41,17 @@ jobs:
 
             - name: List Certificates in Keychain (macOS only)
               if: matrix.os == 'macos-latest'
-              run: security find-identity -v -p codesigning
+              run: |
+                  security find-identity -v -p codesigning
 
-            - name: Compile TypeScript
-              run: yarn build
-
-            - name: Build for Desktop (Windows)
-              if: runner.os == 'Windows'
-              run: yarn electron-builder --win nsis --publish=never
-
-            - name: Build for Desktop (macOS)
-              if: runner.os == 'macOS'
-              run: yarn electron-builder --mac --publish=never
+            - name: Build and Release
+              uses: samuelmeuli/action-electron-builder@v1.6.0
+              with:
+                  github_token: ${{ secrets.GITHUB_TOKEN }}
+                  release: true
               env:
                   DEBUG: electron-notarize*
                   APPLE_ID: ${{ secrets.APPLE_ID }}
                   APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+                  APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
                   APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-
-            - name: Build for Desktop (Linux)
-              if: runner.os == 'Linux'
-              run: yarn electron-builder --linux --publish=never
-
-            - name: Upload Desktop Artifacts
-              uses: actions/upload-artifact@v4
-              with:
-                  name: ScriptLauncher-desktop-${{ github.ref_name }}
-                  path: dist/*
-
-    build_rpi:
-        name: Build for Raspberry Pi (ARM64)
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v3
-
-            - name: Set up QEMU
-              uses: docker/setup-qemu-action@v2
-
-            - name: Set up Node.js
-              uses: actions/setup-node@v3
-              with:
-                  node-version: 20
-
-            - name: Install Yarn v4
-              run: corepack enable && corepack prepare yarn@4.6.0 --activate
-
-            - name: Install dependencies
-              run: yarn install --immutable
-
-            - name: Ensure electron-builder is in PATH
-              run: echo "$(yarn bin)" >> $GITHUB_PATH
-
-            - name: Compile TypeScript
-              run: yarn build
-
-            - name: Build Electron App for ARM64 (with retry)
-              run: |
-                  yarn electron-builder --linux --arm64 --publish=never || (
-                      echo "❌ ARM64 build failed! Retrying in 10 seconds..." && sleep 10 &&
-                      yarn electron-builder --linux --arm64 --publish=never
-                  )
-
-            - name: Upload ARM64 Artifact
-              uses: actions/upload-artifact@v4
-              with:
-                  name: ScriptLauncher-rpi-${{ github.ref_name }}
-                  path: dist/*
-
-    release:
-        name: Create GitHub Release
-        runs-on: ubuntu-latest
-        needs: [build_desktop, build_rpi]
-        steps:
-            - name: Download All Artifacts
-              uses: actions/download-artifact@v4
-              with:
-                  path: release
-
-            - name: List All Release Files (Debugging)
-              run: ls -lah release/
-
-            - name: Create GitHub Release
-              uses: softprops/action-gh-release@v1
-              with:
-                  tag_name: ${{ github.ref_name }}
-                  name: 'ScriptLauncher v${{ github.ref_name }}'
-                  body: "Official release of ScriptLauncher v${{ github.ref_name}}.\n\nDownload the appropriate version for your OS below."
-                  files: release/**/*
-                  draft: true
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
