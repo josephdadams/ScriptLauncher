@@ -85,31 +85,31 @@ jobs:
             - uses: actions/checkout@v3
 
             - name: Set up QEMU
-            uses: docker/setup-qemu-action@v2
+              uses: docker/setup-qemu-action@v2
 
             - name: Set up Node.js
-            uses: actions/setup-node@v3
-            with:
+              uses: actions/setup-node@v3
+              with:
                 node-version: 20
 
             - name: Install dependencies
-            run: yarn install --frozen-lockfile
+              run: yarn install --frozen-lockfile
 
             - name: Ensure electron-builder is in PATH
-            run: echo "$(yarn bin)" >> $GITHUB_PATH
+              run: echo "$(yarn bin)" >> $GITHUB_PATH
 
             - name: Build Electron App for ARM64
-            run: yarn electron-builder --linux --arm64
+              run: yarn electron-builder --linux --arm64
 
             - name: Rename ARM64 Artifact
-            run: |
+              run: |
                 VERSION=${{ github.ref_name }}
                 mkdir release
                 mv dist/*.AppImage "release/ScriptLauncher-rpi-arm64-$VERSION.AppImage"
 
             - name: Upload ARM64 Artifact
-            uses: actions/upload-artifact@v4
-            with:
+              uses: actions/upload-artifact@v4
+              with:
                 name: ScriptLauncher-rpi-${{ github.ref_name }}
                 path: release/*
 
