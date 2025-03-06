@@ -50,6 +50,9 @@ jobs:
               run: |
                   security find-identity -v -p codesigning
 
+            - name: Compile TypeScript
+              run: yarn build
+
             - name: Build for Desktop (Windows)
               if: runner.os == 'Windows'
               run: yarn electron-builder --win
