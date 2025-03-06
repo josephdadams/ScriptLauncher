@@ -54,6 +54,8 @@
             "icon": "assets/tray-icon.ico",
             "requestedExecutionLevel": "requireAdministrator",
             "artifactName": "ScriptLauncher-${version}-windows-${arch}.${ext}",
+            "signingHashAlgorithms": [],
+            "forceCodeSigning": false,
             "publisherName": "Joseph Adams"
         },
         "linux": {
