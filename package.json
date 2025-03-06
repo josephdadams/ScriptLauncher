@@ -62,7 +62,8 @@
                 }
             ],
             "icon": "assets/tray-icon.png",
-            "artifactName": "ScriptLauncher-${version}-linux-${arch}.${ext}"
+            "artifactName": "ScriptLauncher-${version}-linux-${arch}.${ext}",
+            "executableName": "scriptlauncher"
         },
         "generateUpdatesFilesForAllChannels": false
     },
