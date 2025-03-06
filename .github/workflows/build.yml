@@ -35,12 +35,16 @@ jobs:
               if: runner.os == 'Windows'
               shell: pwsh
               run: |
-                  Remove-Item -Recurse -Force "$env:LOCALAPPDATA\electron-builder\Cache"
-                  Remove-Item -Recurse -Force "$env:USERPROFILE\.cache\electron-builder"
+                  if (Test-Path "$env:LOCALAPPDATA\electron-builder\Cache") {
+                      Remove-Item -Recurse -Force "$env:LOCALAPPDATA\electron-builder\Cache"
+                  }
+                  if (Test-Path "$env:USERPROFILE\.cache\electron-builder") {
+                      Remove-Item -Recurse -Force "$env:USERPROFILE\.cache\electron-builder"
+                  }
             
             - name: Clear Electron Builder Cache (Linux/macOS)
               if: runner.os != 'Windows'
-              run: rm -rf ~/.cache/electron-builder
+              run: rm -rf ~/.cache/electron-builder || true
 
             - name: Install NSIS (Windows)
               if: runner.os == 'Windows'
