@@ -50,16 +50,22 @@ jobs:
               run: |
                   security find-identity -v -p codesigning
 
-            - name: Build for Desktop
-              uses: samuelmeuli/action-electron-builder@v1.6.0
-              with:
-                  github_token: ${{ secrets.GITHUB_TOKEN }}
-                  release: false # Prevent auto-release in electron-builder
+            - name: Build for Desktop (Windows)
+              if: runner.os == 'Windows'
+              run: yarn electron-builder --win
+
+            - name: Build for Desktop (macOS)
+              if: runner.os == 'macOS'
+              run: yarn electron-builder --mac
               env:
                   DEBUG: electron-notarize*
                   APPLE_ID: ${{ secrets.APPLE_ID }}
                   APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
                   APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+            - name: Build for Desktop (Linux)
+              if: runner.os == 'Linux'
+              run: yarn electron-builder --linux
 
             - name: Rename and Upload Artifacts
               shell: bash
