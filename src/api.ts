@@ -576,6 +576,205 @@ export function initializeServer(): HttpServer {
                         })
                     }
 
+                    //sanitize the new filename
+                    //remove any characters that are not alphanumeric, underscore, or hyphen
+                    fileName = fileName.replace(/[^a-zA-Z0-9_\-\.]/g, '')
+                    //remove any leading or trailing spaces
+                    fileName = fileName.trim()
+
+                    // 🚨 Prevent Overwriting: Generate a unique filename if needed
+                    let resolvedDestFilePath = path.join(
+                        resolvedDestFolderPath,
+                        fileName
+                    )
+                    let fileBase = path.basename(
+                        fileName,
+                        path.extname(fileName)
+                    )
+                    let fileExt = path.extname(fileName)
+                    let counter = 1
+
+                    while (fs.existsSync(resolvedDestFilePath)) {
+                        // Append _1, _2, _3, etc. to make the filename unique
+                        resolvedDestFilePath = path.join(
+                            resolvedDestFolderPath,
+                            `${fileBase}_${counter}${fileExt}`
+                        )
+                        counter++
+                    }
+
+                    // Move the file
+                    const { moveFile } = await import('move-file')
+                    await moveFile(resolvedSourceFilePath, resolvedDestFilePath)
+
+                    socket.emit(
+                        'command_result',
+                        'File moved successfully: ' + resolvedDestFilePath
+                    )
+                } catch (err: any) {
+                    socket.emit(
+                        'command_result',
+                        `Error processing file: ${err.message}`
+                    )
+                    return
+                }
+            }
+        )
+
+        socket.on(
+            'moveDatedFileInFolderWithExtension',
+            async (
+                sourceFolderPath: string,
+                newestOrOldest: string,
+                fileExtension: string,
+                destFolderPath: string,
+                fileName: string,
+                password: string
+            ) => {
+                if (password !== adminPassword) {
+                    socket.emit(
+                        'command_result',
+                        'Error: Invalid admin password.'
+                    )
+                    return
+                }
+
+                try {
+                    // Resolve absolute paths
+                    //if destFolderPath is blank, use the sourceFolderPath
+                    if (destFolderPath === '') {
+                        destFolderPath = sourceFolderPath
+                    }
+
+                    const resolvedSourceFolderPath =
+                        path.resolve(sourceFolderPath)
+                    const resolvedDestFolderPath = path.resolve(destFolderPath)
+
+                    // Ensure the source folder exists
+                    if (!fs.existsSync(resolvedSourceFolderPath)) {
+                        socket.emit(
+                            'command_result',
+                            'Error: Source folder does not exist: ' +
+                                resolvedSourceFolderPath
+                        )
+                        return
+                    }
+
+                    // OS-specific security checks
+                    if (process.platform === 'win32') {
+                        // Windows-specific system paths
+                        const forbiddenWindowsPaths = [
+                            'C:\\Windows\\',
+                            'C:\\Program Files\\',
+                        ]
+                        if (
+                            forbiddenWindowsPaths.some(
+                                (p) =>
+                                    resolvedSourceFolderPath.startsWith(p) ||
+                                    resolvedDestFolderPath.startsWith(p)
+                            )
+                        ) {
+                            socket.emit(
+                                'command_result',
+                                'Error: Moving system-critical files is not allowed on Windows: ' +
+                                    resolvedSourceFolderPath
+                            )
+                            return
+                        }
+                    } else {
+                        // Unix-based systems: prevent moving root/system-critical files
+                        const forbiddenUnixPaths = [
+                            '/etc/',
+                            '/sys/',
+                            '/proc/',
+                            '/dev/',
+                            '/bin/',
+                            '/usr/bin/',
+                        ]
+                        if (
+                            forbiddenUnixPaths.some(
+                                (p) =>
+                                    resolvedSourceFolderPath.startsWith(p) ||
+                                    resolvedDestFolderPath.startsWith(p)
+                            )
+                        ) {
+                            socket.emit(
+                                'command_result',
+                                'Error: Moving system-critical files is not allowed on Unix-like systems: ' +
+                                    resolvedSourceFolderPath
+                            )
+                            return
+                        }
+                    }
+
+                    //get the list of files in the source folder, with the specified extension
+                    const files = fs
+                        .readdirSync(resolvedSourceFolderPath)
+                        .filter((file) => path.extname(file) === fileExtension)
+
+                    // Sort the files by modification date
+                    files.sort((a, b) => {
+                        return (
+                            fs
+                                .statSync(
+                                    path.join(resolvedSourceFolderPath, b)
+                                )
+                                .mtime.getTime() -
+                            fs
+                                .statSync(
+                                    path.join(resolvedSourceFolderPath, a)
+                                )
+                                .mtime.getTime()
+                        )
+                    })
+
+                    if (newestOrOldest == 'oldest') {
+                        files.reverse()
+                    }
+
+                    if (files.length === 0) {
+                        socket.emit(
+                            'command_result',
+                            'Error: No files found in source folder: ' +
+                                resolvedSourceFolderPath
+                        )
+                        return
+                    }
+
+                    //get the first file
+                    const firstFile = files[0]
+
+                    //sanitize the new filename
+                    //remove any characters that are not alphanumeric, underscore, or hyphen
+                    fileName = fileName.replace(/[^a-zA-Z0-9_\-\.]/g, '')
+                    //remove any leading or trailing spaces
+                    fileName = fileName.trim()
+
+                    //check the filename has an extension and if not, add the extension from firstFile
+                    if (path.extname(fileName) === '') {
+                        fileName = fileName + path.extname(firstFile)
+                    }
+
+                    // Resolve the full path of the selected file
+                    const resolvedSourceFilePath = path.join(
+                        resolvedSourceFolderPath,
+                        firstFile
+                    )
+
+                    // Ensure the source file actually exists before moving
+                    if (!fs.existsSync(resolvedSourceFilePath)) {
+                        throw new Error(
+                            `Source file does not exist: ${resolvedSourceFilePath}`
+                        )
+                    }
+
+                    // Ensure the destination folder exists (create it if missing)
+                    if (!fs.existsSync(resolvedDestFolderPath)) {
+                        fs.mkdirSync(resolvedDestFolderPath, {
+                            recursive: true,
+                        })
+                    }
+
                     // 🚨 Prevent Overwriting: Generate a unique filename if needed
                     let resolvedDestFilePath = path.join(
                         resolvedDestFolderPath,

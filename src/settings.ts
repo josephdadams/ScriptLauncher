@@ -20,11 +20,14 @@ export default function createSettingsWindow() {
         height: 600,
         resizable: false,
         webPreferences: {
-            preload: path.join(__dirname, 'preload.js'),
+            preload: path.join(__dirname, '../dist/preload.js'),
         },
     })
 
     settingsWindow.loadFile(path.join(__dirname, '../public/settings.html'))
+
+    // Open the DevTools for debugging
+    //settingsWindow.webContents.openDevTools()
 
     settingsWindow.on('closed', () => {
         settingsWindow = null
