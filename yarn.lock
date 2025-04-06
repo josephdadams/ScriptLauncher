@@ -2031,6 +2031,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"font-list@npm:^1.5.1":
+  version: 1.5.1
+  resolution: "font-list@npm:1.5.1"
+  checksum: 10c0/634e39a0b9b969ab9ac2b692e4f9351fd07d68fcad666edee4c424620f16d610261f974baac85823ff3c53f589f11d768cb563b6ce0aac0c88c035857b2709c0
+  languageName: node
+  linkType: hard
+
 "foreground-child@npm:^3.1.0":
   version: 3.3.1
   resolution: "foreground-child@npm:3.3.1"
@@ -3782,6 +3789,7 @@ __metadata:
     electron-builder: "npm:^25.1.8"
     electron-store: "npm:^8.0.0"
     express: "npm:^4.21.2"
+    font-list: "npm:^1.5.1"
     move-file: "npm:^3.1.0"
     prettier: "npm:^3.4.2"
     socket.io: "npm:^4.8.1"
