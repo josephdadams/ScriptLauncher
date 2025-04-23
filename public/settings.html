@@ -11,40 +11,35 @@
         <title>ScriptLauncher Settings</title>
         <style>
             body {
-                font-family: Arial, sans-serif;
-                margin: 20px;
+                font-family: sans-serif;
+                padding: 20px;
             }
-            form {
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
-            }
-            label {
-                font-weight: bold;
-            }
+            label,
             input {
-                padding: 8px;
-                font-size: 14px;
+                display: block;
+                margin-bottom: 10px;
             }
-            button {
-                padding: 10px 15px;
-                background-color: #28a745;
-                color: white;
-                border: none;
-                cursor: pointer;
-                font-size: 16px;
-                border-radius: 5px;
+            #feedback {
+                margin-top: 10px;
+                font-weight: bold;
             }
         </style>
     </head>
     <body>
-        <h1>ScriptLauncher Settings</h1>
+        <h2>ScriptLauncher Settings</h2>
         <form id="settingsForm">
-            <label for="password">Password:</label>
-            <input type="text" id="password" name="password" value="admin" />
-
-            <button type="submit">Save Settings</button>
+            <label for="password">Password</label>
+            <input
+                type="password"
+                id="password"
+                name="password"
+                required
+                minlength="3"
+                autocomplete="off"
+            />
+            <button type="submit">Save</button>
         </form>
-        <script src="./settings.js"></script>
+        <div id="feedback"></div>
+        <script src="settings.js"></script>
     </body>
 </html>

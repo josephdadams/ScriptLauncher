@@ -3,17 +3,32 @@ window.electronAPI.getSettings().then((settings) => {
     document.getElementById('password').value = settings.password || 'admin'
 })
 
-// Handle form submission and save the updated settings
-document.getElementById('settingsForm').addEventListener('submit', (event) => {
+const feedback = document.getElementById('feedback')
+const form = document.getElementById('settingsForm')
+
+form.addEventListener('submit', async (event) => {
     event.preventDefault()
 
-    const newSettings = {
-        password: document.getElementById('password').value,
+    const password = document.getElementById('password').value
+
+    if (!password || password.length < 3) {
+        feedback.textContent = 'Password must be at least 3 characters.'
+        feedback.style.color = 'red'
+        return
     }
 
-    // Save the new settings using Electron API
-    window.electronAPI.saveSettings(newSettings).then(() => {
-        // Close the settings window
-        window.close()
-    })
+    const newSettings = { password }
+    const result = await window.electronAPI.saveSettings(newSettings)
+
+    if (result.success) {
+        feedback.textContent = 'Settings saved successfully.'
+        feedback.style.color = 'green'
+        //close out the window after 2 seconds
+        setTimeout(() => {
+            window.close()
+        }, 2000)
+    } else {
+        feedback.textContent = 'Error saving settings: ' + result.error
+        feedback.style.color = 'red'
+    }
 })
