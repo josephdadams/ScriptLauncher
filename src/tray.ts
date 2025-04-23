@@ -1,11 +1,9 @@
 import { Tray, Menu, nativeImage, app } from 'electron'
 import * as path from 'path'
 import Store from 'electron-store'
-import createSettingsWindow from './settings.js' // Import the createSettingsWindow function
-
+import createSettingsWindow from './settings.js'
 import { fileURLToPath } from 'url'
 
-// Define __dirname in ESM
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
@@ -13,32 +11,40 @@ let tray: Tray | null = null
 const store = new Store()
 
 export default function createTray() {
-    // Create the tray icon using nativeImage and resize it to the desired size
     const image = nativeImage.createFromPath(
-        path.join(__dirname, '../assets/tray-icon.png') // Adjust this path as needed
+        path.join(__dirname, '../assets/tray-icon.png')
     )
     tray = new Tray(image.resize({ width: 16, height: 16 }))
-
-    tray.setToolTip('ScriptLauncher') // Set the tooltip text
+    tray.setToolTip('ScriptLauncher')
     updateTrayMenu()
 }
 
-// Function to update the tray menu based on the window state
 function updateTrayMenu() {
-    // Retrieve stored values
     const version = app.getVersion()
     const port = store.get('port')
+    const isRunAtLogin = store.get('runAtLogin', false) as boolean
 
-    // Build context menu with version, IP, and Device ID
-    let contextMenuTemplate = [
+    const contextMenuTemplate: Electron.MenuItemConstructorOptions[] = [
         { label: `ScriptLauncher Version: ${version || ''}`, enabled: false },
         { label: `Listening on: ${port || ''}`, enabled: false },
         { type: 'separator' },
         {
+            label: 'Run at Login',
+            type: 'checkbox',
+            checked: isRunAtLogin,
+            click: (menuItem) => {
+                const shouldEnable = menuItem.checked
+                store.set('runAtLogin', shouldEnable)
+                app.setLoginItemSettings({
+                    openAtLogin: shouldEnable,
+                    path: app.getPath('exe'),
+                })
+            },
+        },
+        {
             label: 'Settings',
             type: 'normal',
             click: () => {
-                // Open settings window
                 createSettingsWindow()
             },
         },
@@ -49,10 +55,9 @@ function updateTrayMenu() {
                 app.quit()
             },
         },
-    ] as Electron.MenuItemConstructorOptions[]
+    ]
 
     const contextMenu = Menu.buildFromTemplate(contextMenuTemplate)
-
     tray?.setContextMenu(contextMenu)
 }
 
