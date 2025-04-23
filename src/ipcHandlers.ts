@@ -1,18 +1,23 @@
 import { ipcMain } from 'electron'
 import Store from 'electron-store'
-import { defaultSettings } from './defaults.js' // Import default settings
+import { defaultSettings } from './defaults.js'
 
 const store = new Store({ defaults: defaultSettings })
 
-// Initialize the IPC handlers
 export function initializeIpcHandlers() {
-    // Handle fetching settings
     ipcMain.handle('getSettings', () => {
         return store.store
     })
 
-    // Handle saving settings
-    ipcMain.handle('saveSettings', (_, newSettings) => {
-        store.set(newSettings)
+    ipcMain.handle('saveSettings', (_, newSettings: Record<string, any>) => {
+        try {
+            store.set(newSettings)
+            return { success: true }
+        } catch (error) {
+            return {
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error',
+            }
+        }
     })
 }
