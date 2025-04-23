@@ -1,6 +1,6 @@
 {
     "name": "scriptlauncher",
-    "version": "1.5.0",
+    "version": "1.5.1",
     "author": "Joseph Adams <joseph@josephadams.dev>",
     "description": "ScriptLauncher is a really simple app - it accepts socket.io requests and runs the script provided.",
     "main": "dist/main.js",
@@ -19,7 +19,8 @@
         "files": [
             "dist/**/*",
             "public/**/*",
-            "assets/**/*"
+            "assets/**/*",
+            "package.json"
         ],
         "mac": {
             "target": [
