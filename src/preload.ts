@@ -1,14 +1,23 @@
 const { contextBridge, ipcRenderer } = require('electron')
 
-// Expose APIs to the renderer process through contextBridge
 contextBridge.exposeInMainWorld('electronAPI', {
-    // Wrapper for invoking IPC methods from the renderer
-    invoke: (channel: string, data?: any) => ipcRenderer.invoke(channel, data),
+    getSettings: async () => {
+        try {
+            return await ipcRenderer.invoke('getSettings')
+        } catch (err) {
+            console.error('Failed to fetch settings:', err)
+            return {}
+        }
+    },
 
-    // Fetch settings from the main process
-    getSettings: () => ipcRenderer.invoke('getSettings'),
-
-    // Save settings to the main process
-    saveSettings: (newSettings: any) =>
-        ipcRenderer.invoke('saveSettings', newSettings),
+    saveSettings: async (newSettings: any) => {
+        try {
+            return await ipcRenderer.invoke('saveSettings', newSettings)
+        } catch (err) {
+            console.error('Failed to save settings:', err)
+            const errorMessage =
+                err instanceof Error ? err.message : 'Unknown error'
+            return { success: false, error: errorMessage }
+        }
+    },
 })
