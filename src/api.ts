@@ -7,8 +7,8 @@ import {
     stopSystemInfoInterval,
 } from './helpers/socketHandlers.js'
 
-import { readFileSync } from 'fs'
-const APP_VERSION = JSON.parse(readFileSync('./package.json', 'utf-8')).version
+import { getAppVersion } from './helpers/version.js'
+const APP_VERSION = getAppVersion()
 
 export function initializeServer(): HttpServer {
     const app = express()
