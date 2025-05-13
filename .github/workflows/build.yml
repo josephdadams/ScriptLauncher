@@ -25,8 +25,14 @@ jobs:
             - name: Install Linux dependencies for RobotJS
               if: matrix.os == 'ubuntu-latest'
               run: |
-                sudo apt-get update
-                sudo apt-get install -y libx11-dev libxtst-dev libpng++-dev
+                  sudo apt-get update
+                  sudo apt-get install -y libx11-dev libxtst-dev libpng++-dev
+
+            - name: Install Python distutils (macOS only)
+              if: matrix.os == 'macos-latest'
+              run: |
+                  python3 -m ensurepip
+                  python3 -m pip install setuptools
 
             - name: Install dependencies
               run: yarn install
