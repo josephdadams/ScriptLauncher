@@ -26,7 +26,7 @@ jobs:
               run: yarn install --production
 
             - name: Rebuild native modules for Electron
-              run: yarn electron-rebuild
+              run: yarn electron:rebuild
 
             # macOS-specific steps for code signing and notarization
             - name: Import Apple Developer Certificate (macOS only)
