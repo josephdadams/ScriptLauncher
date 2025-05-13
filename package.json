@@ -1,6 +1,6 @@
 {
     "name": "scriptlauncher",
-    "version": "1.5.2",
+    "version": "1.6.0",
     "author": "Joseph Adams <joseph@josephadams.dev>",
     "description": "ScriptLauncher is a really simple app - it accepts socket.io requests and runs the script provided.",
     "main": "dist/main.js",
@@ -8,6 +8,7 @@
     "scripts": {
         "start": "yarn build && electron .",
         "build": "tsc",
+        "electron:rebuild": "electron-builder --dir",
         "dev": "concurrently \"tsc -w\" \"wait-on dist/main.js && electron .\"",
         "format": "prettier -w .",
         "lint:raw": "eslint --ext .ts --ext .js --ignore-pattern dist --ignore-pattern pkg",
@@ -60,6 +61,7 @@
         "express": "^4.21.2",
         "font-list": "^1.5.1",
         "move-file": "^3.1.0",
+        "robotjs": "^0.6.0",
         "socket.io": "^4.8.1",
         "systeminformation": "^5.25.11"
     },
@@ -70,6 +72,7 @@
         "concurrently": "^8.0.0",
         "electron": "^33.2.1",
         "electron-builder": "^25.1.8",
+        "electron-rebuild": "^3.2.9",
         "prettier": "^3.4.2",
         "ts-node": "^10.0.0",
         "typescript": "^5.7.3",
