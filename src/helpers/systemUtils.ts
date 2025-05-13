@@ -36,17 +36,15 @@ export async function getSystemInfo() {
 
 export function runScript(
     executable: string,
-    args: string,
+    args: string[],
     stdin: string,
-    password: string
 ): Promise<string> {
     return new Promise((resolve, reject) => {
-        if (password !== adminPassword) {
-            reject('Error: Invalid admin password.')
-            return
-        }
+        console.log(
+            `Running script: ${executable} ${args.join(' ')}`)
 
-        const process = spawn(executable, [...args.split(' ')])
+ const process = spawn(executable, args)
+
         let output = '',
             errorOutput = ''
 

@@ -7,8 +7,7 @@ import {
     stopSystemInfoInterval,
 } from './helpers/socketHandlers.js'
 
-import { getAppVersion } from './helpers/version.js'
-const APP_VERSION = getAppVersion()
+import { registerRestHandlers } from './helpers/rest.js'
 
 export function initializeServer(): HttpServer {
     const app = express()
@@ -19,18 +18,10 @@ export function initializeServer(): HttpServer {
 
     registerSocketHandlers(io)
 
+    registerRestHandlers(app)
+
     server.on('close', () => {
         stopSystemInfoInterval()
-    })
-
-    app.get('/', (_, res) => {
-        res.json({
-            status: 'ok',
-            name: 'ScriptLauncher API',
-            version: APP_VERSION,
-            uptime: process.uptime(),
-            hostname: require('os').hostname(),
-        })
     })
 
     process.on('SIGINT', cleanup)
@@ -39,10 +30,14 @@ export function initializeServer(): HttpServer {
     return server
 }
 
+let cleanupCalled = false
+
 function cleanup() {
-    console.log('Cleaning up before shutdown...')
-    // stop any intervals, close files, etc.
-    stopSystemInfoInterval()
-    console.log('Cleanup complete. Exiting now.')
-    process.exit(0)
+	if (cleanupCalled) return
+	cleanupCalled = true
+
+	console.log('Cleaning up before shutdown...')
+	stopSystemInfoInterval()
+	console.log('Cleanup complete. Exiting now.')
+	process.exit(0)
 }

@@ -3,6 +3,8 @@ import fs from 'fs'
 import path from 'path'
 import { Socket } from 'socket.io'
 
+import { EVENTS } from './generalUtils.js'
+
 export function sanitizeFilename(inputPath: string): string {
     const dir = path.dirname(inputPath)
     let base = path.basename(inputPath)
@@ -120,15 +122,20 @@ export async function moveDatedFile({
     const resolvedDest = path.resolve(destFolderPath || sourceFolderPath)
 
     if (!fs.existsSync(resolvedSource)) {
-        socket.emit(
-            'command_result',
-            `Error: Source folder not found: ${resolvedSource}`
-        )
+        const errorObj = {
+            command: 'moveDatedFile',
+            error: `Source folder not found: ${resolvedSource}`,
+        }
+        socket.emit(EVENTS.COMMAND_RESULT, errorObj)
         return
     }
 
     if (isPathForbidden(resolvedSource) || isPathForbidden(resolvedDest)) {
-        socket.emit('command_result', 'Error: System-critical path.')
+        const errorObj = {
+            command: 'moveDatedFile',
+            error: `Path is forbidden: ${resolvedSource} or ${resolvedDest}`,
+        }
+        socket.emit(EVENTS.COMMAND_RESULT, errorObj)
         return
     }
 
@@ -138,7 +145,11 @@ export async function moveDatedFile({
 
     const firstFile = getLatestFile(files, resolvedSource, newestOrOldest)
     if (!firstFile) {
-        socket.emit('command_result', 'Error: No matching files found.')
+        const errorObj = {
+            command: 'moveDatedFile',
+            error: `No matching files found in ${resolvedSource}`,
+        }
+        socket.emit(EVENTS.COMMAND_RESULT, errorObj)
         return
     }
 
@@ -159,7 +170,7 @@ export async function moveDatedFile({
     const { moveFile } = await import('move-file')
     await moveFile(sourceFilePath, destFilePath)
 
-    socket.emit('command_result', `File moved successfully: ${destFilePath}`)
+    socket.emit(EVENTS.COMMAND_RESULT, `File moved successfully: ${destFilePath}`)
 }
 
 export async function moveFile(
@@ -172,17 +183,21 @@ export async function moveFile(
 
         moveFile(source, dest)
             .then(() => {
-                socket.emit(
-                    'command_result',
-                    `File moved successfully: ${dest}`
-                )
+                let fileMovedObj = {
+                    command: 'moveFile',
+                    status: 'ok',
+                    result: `File moved successfully: ${dest}`,
+                }
+                socket.emit(EVENTS.COMMAND_RESULT, fileMovedObj)
                 resolve()
             })
             .catch((err: Error) => {
-                socket.emit(
-                    'command_result',
-                    `Error moving file: ${err.message}`
-                )
+                let fileMovedObj = {
+                    command: 'moveFile',
+                    status: 'error',
+                    result: `Error moving file: ${err.message}`,
+                }  
+                socket.emit(EVENTS.COMMAND_RESULT, fileMovedObj)
                 reject(err)
             })
     })

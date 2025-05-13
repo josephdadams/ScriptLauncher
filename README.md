@@ -2,158 +2,136 @@
 
 <img src="assets/tray-icon.png" alt="Logo" width="200px" />
 
-ScriptLauncher runs scripts. That's it. It's really simple.
+ScriptLauncher runs scripts. That's it. It's really simple — but also powerful.
 
-## How to Use ScriptLauncher
+Use it to automate local tasks, simulate inputs, manage files, or send system commands from anywhere using Bitfocus Companion or a custom frontend.
 
-1. **Download and Install**: Download the latest release here: https://github.com/josephdadams/scriptlauncher/releases
+## ✅ How to Use ScriptLauncher
 
-1. **Run from Source**: Clone the repository and install dependencies using Yarn:
+1. **Download**: [Grab the latest release](https://github.com/josephdadams/scriptlauncher/releases)
 
-    ```bash
-    git clone https://github.com/josephdadams/scriptlauncher
-    cd scriptlauncher
-    yarn
-    yarn start
-    ```
+2. **Run from Source** (for development):
 
-    Configure Your Settings: Open the settings window to set up the password and any other settings.
+```bash
+git clone https://github.com/josephdadams/scriptlauncher
+cd scriptlauncher
+yarn
+yarn start
+```
 
-## Contributing
+3. **Configure**: Right-click the tray icon and open **Settings** to set your password and preferences.
 
-Contributions are welcome! To contribute to the development of ScriptLauncher:
+---
 
-1. Fork the Repository: Create a fork of the main repository to your GitHub account.
-1. Create a Branch: Create a new branch for your feature or bug fix:
+## 🛠 Development
 
-    ```bash
-    git checkout -b feature-name
-    ```
+You'll need Node.js and Yarn. Then:
 
-1. Make Changes: Implement your changes and test them thoroughly.
-1. Submit a Pull Request: Once your changes are ready, submit a pull request to the main repository with a clear description of your changes.
+```bash
+git clone https://github.com/josephdadams/scriptlauncher
+cd ScriptLauncher
+yarn
+yarn start
+```
 
-## Development
+### Build for Production
 
-To develop ScriptLauncher, you will need to have Node.js and Yarn installed. Follow these steps to set up your development environment.
+```bash
+yarn build        # Transpile code
+yarn dist         # Create platform-specific installers
+```
 
-1. Clone the Repository:
+---
 
-    ```bash
-    git clone https://github.com/josephdadams/scriptlauncher
-    cd ScriptLauncher
-    ```
+## ⚡ API
 
-1. Install Dependencies:
+ScriptLauncher exposes both **Socket.IO** and **REST APIs** for automation.
 
-    ```bash
-    yarn
-    ```
-
-1. Run the Application:
-
-    ```bash
-    yarn start
-    ```
-
-1. Build the Application:
-
-    ```bash
-    yarn build
-    ```
-
-1. Package the Application using electron-builder:
-
-    ```
-    yarn dist
-    ```
-
-# API
-
-ScriptLauncher provides a **Socket.IO-based API**. It is available on **Port `8810`**.
-
-## Overview
-
-The ScriptLauncher API allows users to execute scripts through various executables (such as `node`, `python`, `bash`, etc.). Scripts can be passed as raw code, and the results of execution are returned through socket events. The API also includes predefined commands for system management tasks like shutdown, reboot, and fetching system information.
-
-## Base URL
-
-The socket.io API is available on the following URL:
+### Base URL
 
 ```
 http://localhost:8810
 ```
 
-## API Endpoint
+### 🔌 Socket.IO API
 
-The **Socket.IO API** allows real-time interaction with the ScriptLauncher service, where clients can send scripts for execution and receive results.
+Use `io.connect('http://localhost:8810')` to get started.
 
-#### Events:
-
-- **`connect`**: Triggered when a client successfully connects to the server.
-- **`disconnect`**: Triggered when the client disconnects from the server.
-- **`execute`**: Custom event used to send a script to the server for execution. The script will be executed using the specified executable.
-- **`shutdown`**: Custom event used to trigger a system shutdown with a custom time.
-- **`reboot`**: Predefined event to trigger a system reboot.
-- **`lock`**: Predefined event to trigger locking the computer screen.
-- **`sendAlert`**: Predefined event to send a system alert message.
-
-#### Event: `execute`
-
-**Description**: Executes a script using a specified executable (e.g., `node`, `python`, `bash`).
-
-**Arguments**:
-
-- `executable` (string): The executable used to run the script (e.g., `node`, `python`, `bash`).
-- `args` (string): The arguments to include.
-- `stdin` (string): The string to pipe to stdin.
-- `password` (string): The admin password for authorization.
-
-#### Event: `shutdown`
-
-**Description**: Shuts down the system after a specified delay (in minutes). A notification is shown before shutting down.
-
-**Arguments**:
-
-- `password` (string): The admin password for authorization.
-- `time` (number): The delay in minutes before shutdown.
+#### Common Events
+- `command` — General-purpose command trigger. Send an object with:
+  - `command`: The command name
+  - `password`: Your password
+  - Other properties depending on the command
 
 **Example**:
-
-```js
-socket.on('shutdown', (password, time) => {
-    socket.emit('shutdown', password, time)
-})
-
-socket.on('shutdown_result', (result) => {
-    console.log(result)
+```ts
+socket.emit('command', {
+  command: 'shutdown',
+  password: 'admin22',
+  time: 5,
 })
 ```
 
-### 3. **Predefined Scripts**
+#### Result Events
+Each command will return a response via `${command}_result`, e.g.,:
+```ts
+socket.on('shutdown_result', (msg) => console.log(msg))
+```
 
-These predefined scripts perform common system operations. These events are available via **Socket.IO**.
+#### Supported Commands (Partial List)
+- `runScript` — Run any local script/executable
+- `shutdown`, `shutdown_cancel`, `reboot`, `lock`
+- `sendAlert`, `getFonts`, `getSystemInfo`
+- `moveFile`, `moveDatedFileInFolder`, `moveFileBasedOnSize`
+- `focusApp`, `quitApp`
+- `sendInput` (with subtypes like keyPress, mouseClick, etc.)
 
-#### Event: `reboot`
+---
 
-**Description**: Reboots the system immediately.
+### 🌐 REST API
 
-**Arguments**:
+#### POST `/command`
 
-- `password` (string): The admin password for authorization.
+Send any command with JSON body:
+```json
+{
+  "command": "shutdown",
+  "password": "admin22",
+  "time": 5
+}
+```
 
-#### Event: `sendAlert`
+#### GET `/commands`
+Returns a list of all available commands with metadata.
 
-**Description**: Sends a custom system alert message.
+---
 
-**Arguments**:
+## 🔒 Security
+Most actions require the configured password for authorization. Keep this secret.
 
-- `password` (string): The admin password for authorization.
-- `message` (string): The alert message to be sent.
+---
 
-## License
+## 🤝 Contributing
 
-ScriptLauncher is an open-source project licensed under the MIT License. Feel free to use, modify, and distribute this software as per the terms of the license.
-Contact
+1. Fork this repo
+2. Create a new branch:
+```bash
+git checkout -b feature-name
+```
+3. Submit a pull request with clear description
 
-For any questions or support, feel free to reach out through GitHub Issues.
+---
+
+## 📄 License
+
+MIT — Free to use, modify, and distribute.
+
+---
+
+## 🙋 Support
+
+Have a question or idea? Use [GitHub Issues](https://github.com/josephdadams/scriptlauncher/issues) to start a discussion or report a bug.
+
+---
+
+Built with 💻 by [@josephdadams](https://github.com/josephdadams)
