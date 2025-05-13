@@ -170,7 +170,10 @@ export async function moveDatedFile({
     const { moveFile } = await import('move-file')
     await moveFile(sourceFilePath, destFilePath)
 
-    socket.emit(EVENTS.COMMAND_RESULT, `File moved successfully: ${destFilePath}`)
+    socket.emit(
+        EVENTS.COMMAND_RESULT,
+        `File moved successfully: ${destFilePath}`
+    )
 }
 
 export async function moveFile(
@@ -196,7 +199,7 @@ export async function moveFile(
                     command: 'moveFile',
                     status: 'error',
                     result: `Error moving file: ${err.message}`,
-                }  
+                }
                 socket.emit(EVENTS.COMMAND_RESULT, fileMovedObj)
                 reject(err)
             })

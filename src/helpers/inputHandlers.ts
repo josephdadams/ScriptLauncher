@@ -1,9 +1,8 @@
-
 import robot from 'robotjs'
 
 export function sendInputCommand(cmd: any) {
     console.log('sendInputCommand', cmd)
-   switch (cmd.type) {
+    switch (cmd.type) {
         case 'keyDown':
             robot.keyToggle(cmd.key, 'down')
             break
@@ -21,11 +20,10 @@ export function sendInputCommand(cmd: any) {
             if (modifiers.length > 0) {
                 modifiers = modifiers.map((mod: string) => mod.toLowerCase())
                 robot.keyTap(cmd.key, modifiers)
-            }
-            else {
+            } else {
                 robot.keyTap(cmd.key)
             }
-            
+
             break
 
         case 'mouseSetPosition':

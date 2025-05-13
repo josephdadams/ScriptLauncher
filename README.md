@@ -58,27 +58,32 @@ http://localhost:8810
 Use `io.connect('http://localhost:8810')` to get started.
 
 #### Common Events
+
 - `command` — General-purpose command trigger. Send an object with:
-  - `command`: The command name
-  - `password`: Your password
-  - Other properties depending on the command
+    - `command`: The command name
+    - `password`: Your password
+    - Other properties depending on the command
 
 **Example**:
+
 ```ts
 socket.emit('command', {
-  command: 'shutdown',
-  password: 'admin22',
-  time: 5,
+    command: 'shutdown',
+    password: 'admin22',
+    time: 5,
 })
 ```
 
 #### Result Events
+
 Each command will return a response via `${command}_result`, e.g.,:
+
 ```ts
 socket.on('shutdown_result', (msg) => console.log(msg))
 ```
 
 #### Supported Commands (Partial List)
+
 - `runScript` — Run any local script/executable
 - `shutdown`, `shutdown_cancel`, `reboot`, `lock`
 - `sendAlert`, `getFonts`, `getSystemInfo`
@@ -93,20 +98,23 @@ socket.on('shutdown_result', (msg) => console.log(msg))
 #### POST `/command`
 
 Send any command with JSON body:
+
 ```json
 {
-  "command": "shutdown",
-  "password": "admin22",
-  "time": 5
+    "command": "shutdown",
+    "password": "admin22",
+    "time": 5
 }
 ```
 
 #### GET `/commands`
+
 Returns a list of all available commands with metadata.
 
 ---
 
 ## 🔒 Security
+
 Most actions require the configured password for authorization. Keep this secret.
 
 ---
@@ -115,9 +123,11 @@ Most actions require the configured password for authorization. Keep this secret
 
 1. Fork this repo
 2. Create a new branch:
+
 ```bash
 git checkout -b feature-name
 ```
+
 3. Submit a pull request with clear description
 
 ---

@@ -21,12 +21,18 @@ import { sendInputCommand } from './inputHandlers.js'
 import { checkPassword, EVENTS } from './generalUtils.js'
 import { Socket } from 'socket.io'
 
-export type CommandContext = {
-    emit?: (event: string, data: any) => void
-    platform?: NodeJS.Platform
-} | Socket
+export type CommandContext =
+    | {
+          emit?: (event: string, data: any) => void
+          platform?: NodeJS.Platform
+      }
+    | Socket
 
-export type CommandHandler = (params?: any, password?: string, ctx?: CommandContext) => Promise<any>
+export type CommandHandler = (
+    params?: any,
+    password?: string,
+    ctx?: CommandContext
+) => Promise<any>
 
 function withMeta<T extends CommandHandler>(
     fn: T,
@@ -67,7 +73,7 @@ const systemCommands = {
                     ? ['shutdown', '/r', '/f', '/t', '0']
                     : ['sudo', 'reboot']
             await runSystemCommand(cmd, 'System is rebooting...')
-           return `System will reboot now.`
+            return `System will reboot now.`
         },
         {
             description: 'Reboot the system immediately',
@@ -92,7 +98,7 @@ const systemCommands = {
                         ]
                       : ['gnome-screensaver-command', '-l']
             await runSystemCommand(cmd, 'System locking...')
-           return 'System locked.'
+            return 'System locked.'
         },
         {
             description: 'Lock the user session',

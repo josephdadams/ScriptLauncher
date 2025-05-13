@@ -33,11 +33,11 @@ export function initializeServer(): HttpServer {
 let cleanupCalled = false
 
 function cleanup() {
-	if (cleanupCalled) return
-	cleanupCalled = true
+    if (cleanupCalled) return
+    cleanupCalled = true
 
-	console.log('Cleaning up before shutdown...')
-	stopSystemInfoInterval()
-	console.log('Cleanup complete. Exiting now.')
-	process.exit(0)
+    console.log('Cleaning up before shutdown...')
+    stopSystemInfoInterval()
+    console.log('Cleanup complete. Exiting now.')
+    process.exit(0)
 }
