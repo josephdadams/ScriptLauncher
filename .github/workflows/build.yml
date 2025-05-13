@@ -36,6 +36,9 @@ jobs:
             - name: Install dependencies
               run: yarn install
 
+            - name: Build App (typescript)
+              run: yarn build
+
             - name: Rebuild native modules for Electron
               run: yarn electron:rebuild
 
