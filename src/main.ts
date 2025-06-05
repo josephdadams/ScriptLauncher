@@ -26,10 +26,15 @@ app.on('ready', () => {
     createTray()
     initializeIpcHandlers()
 
-    const server = initializeServer()
-    server.listen(PORT, () => {
-        console.log(`ScriptLauncher Server running on http://localhost:${PORT}`)
-    })
+    try {
+        const server = initializeServer()
+        server.listen(PORT, () => {
+            console.log(`ScriptLauncher Server running on http://localhost:${PORT}`)
+        })
+    }
+    catch(error) {
+        showNotification('Error Starting ScriptLauncher', `Failed to start - is port ${PORT} in use elsewhere? Is ScriptLauncher already running?`)
+    }
 })
 
 app.on('window-all-closed', () => {
