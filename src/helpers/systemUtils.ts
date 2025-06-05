@@ -11,10 +11,12 @@ const adminPassword = store.get('password')
 
 export async function getSystemInfo() {
     try {
-        const [cpu, currentLoad, memory, networkInterfaces, networkStats, gpu] =
+        const [cpu, cpuTemperature, currentLoad, fsSize, gpu, memory, networkInterfaces, networkStats] =
             await Promise.all([
                 systeminformation.cpu(),
+                systeminformation.cpuTemperature(),
                 systeminformation.currentLoad(),
+                systeminformation.fsSize(),
                 systeminformation.mem(),
                 systeminformation.networkInterfaces(),
                 systeminformation.networkStats(),
@@ -22,11 +24,13 @@ export async function getSystemInfo() {
             ])
         return {
             cpu,
+            cpuTemperature,
             currentLoad,
+            fsSize,
+            gpu,
             memory,
             networkInterfaces,
             networkStats,
-            gpu,
         }
     } catch (error) {
         console.error('Error getting system information:', error)
