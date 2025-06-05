@@ -17,10 +17,10 @@ export async function getSystemInfo() {
                 systeminformation.cpuTemperature(),
                 systeminformation.currentLoad(),
                 systeminformation.fsSize(),
+                systeminformation.graphics(),
                 systeminformation.mem(),
                 systeminformation.networkInterfaces(),
                 systeminformation.networkStats(),
-                systeminformation.graphics(),
             ])
         return {
             cpu,
