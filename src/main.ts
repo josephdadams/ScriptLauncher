@@ -40,3 +40,18 @@ app.on('activate', () => {
     // Potential spot to show a notification or reopen a window
     // showNotification('ScriptLauncher is ready.')
 })
+
+//prevent multiple instances
+const gotTheLock = app.requestSingleInstanceLock()
+if (!gotTheLock) {
+    app.quit()
+}
+else {
+    app.on('second-instance', (event, commandLine, workingDirectory) => {
+        // This is where you can handle the second instance
+        if (global.mainWindow) {
+            if (global.mainWindow.isMinimized()) global.mainWindow.restore()
+            global.mainWindow.focus()
+        }
+    })
+}
