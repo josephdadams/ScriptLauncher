@@ -4,7 +4,7 @@ declare global {
 
 import { app, BrowserWindow } from 'electron'
 import createTray from './tray.js'
-import { showNotification } from './notification'
+import { showNotification } from './notification.js'
 import { initializeIpcHandlers } from './ipcHandlers.js'
 import Store from 'electron-store'
 import { initializeServer } from './api.js'
