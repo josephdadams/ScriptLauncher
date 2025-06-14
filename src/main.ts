@@ -29,11 +29,15 @@ app.on('ready', () => {
     try {
         const server = initializeServer()
         server.listen(PORT, () => {
-            console.log(`ScriptLauncher Server running on http://localhost:${PORT}`)
+            console.log(
+                `ScriptLauncher Server running on http://localhost:${PORT}`
+            )
         })
-    }
-    catch(error) {
-        showNotification('Error Starting ScriptLauncher', `Failed to start - is port ${PORT} in use elsewhere? Is ScriptLauncher already running?`)
+    } catch (error) {
+        showNotification(
+            'Error Starting ScriptLauncher',
+            `Failed to start - is port ${PORT} in use elsewhere? Is ScriptLauncher already running?`
+        )
     }
 })
 
@@ -50,8 +54,7 @@ app.on('activate', () => {
 const gotTheLock = app.requestSingleInstanceLock()
 if (!gotTheLock) {
     app.quit()
-}
-else {
+} else {
     app.on('second-instance', (event, commandLine, workingDirectory) => {
         // This is where you can handle the second instance
         if (global.mainWindow) {
