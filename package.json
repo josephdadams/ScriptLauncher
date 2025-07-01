@@ -1,6 +1,6 @@
 {
     "name": "scriptlauncher",
-    "version": "1.8.0",
+    "version": "1.9.0",
     "author": "Joseph Adams <joseph@josephadams.dev>",
     "description": "ScriptLauncher is a really simple app - it accepts socket.io requests and runs the script provided.",
     "main": "dist/main.js",
