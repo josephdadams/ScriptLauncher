@@ -46,7 +46,7 @@ export function registerRestHandlers(app: Express): void {
             console.error(`[REST] Command '${commandName}' failed:`, err)
             res.status(500).json({
                 command: commandName,
-                error: err.message || 'Internal server error',
+                error: err.message || err.result || 'Internal server error',
             })
         }
     }

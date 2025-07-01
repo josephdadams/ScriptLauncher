@@ -109,6 +109,7 @@ export async function moveDatedFile({
     newestOrOldest,
     fileExtension,
     fileName,
+    copyOnly,
     socket,
 }: {
     sourceFolderPath: string
@@ -116,6 +117,7 @@ export async function moveDatedFile({
     newestOrOldest: 'newest' | 'oldest'
     fileExtension?: string
     fileName: string
+    copyOnly: boolean
     socket: Socket
 }) {
     const resolvedSource = path.resolve(sourceFolderPath)
@@ -126,7 +128,7 @@ export async function moveDatedFile({
             command: 'moveDatedFile',
             error: `Source folder not found: ${resolvedSource}`,
         }
-        socket.emit(EVENTS.COMMAND_RESULT, errorObj)
+        socket?.emit(EVENTS.COMMAND_RESULT, errorObj)
         return
     }
 
@@ -135,7 +137,7 @@ export async function moveDatedFile({
             command: 'moveDatedFile',
             error: `Path is forbidden: ${resolvedSource} or ${resolvedDest}`,
         }
-        socket.emit(EVENTS.COMMAND_RESULT, errorObj)
+        socket?.emit(EVENTS.COMMAND_RESULT, errorObj)
         return
     }
 
@@ -149,7 +151,7 @@ export async function moveDatedFile({
             command: 'moveDatedFile',
             error: `No matching files found in ${resolvedSource}`,
         }
-        socket.emit(EVENTS.COMMAND_RESULT, errorObj)
+        socket?.emit(EVENTS.COMMAND_RESULT, errorObj)
         return
     }
 
@@ -167,80 +169,93 @@ export async function moveDatedFile({
 
     const destFilePath = generateUniqueFilePath(resolvedDest, newFileName)
 
-    const { moveFile } = await import('move-file')
-    await moveFile(sourceFilePath, destFilePath)
-
-    socket.emit(
-        EVENTS.COMMAND_RESULT,
-        `File moved successfully: ${destFilePath}`
-    )
+    await moveFile(sourceFilePath, destFilePath, copyOnly, socket)
 }
 
 export async function moveFile(
-    source: string,
-    dest: string,
-    socket: Socket
+	source: string,
+	dest: string,
+	copyOnly: boolean,
+	socket: any
 ): Promise<void> {
-    return new Promise(async (resolve, reject) => {
-        const { moveFile } = await import('move-file')
+	return new Promise(async (resolve, reject) => {
+		try {
+			const destFolder = path.dirname(dest)
+			const fileName = path.basename(dest)
+			const uniqueDest = generateUniqueFilePath(destFolder, fileName)
 
-        moveFile(source, dest)
-            .then(() => {
-                let fileMovedObj = {
-                    command: 'moveFile',
-                    status: 'ok',
-                    result: `File moved successfully: ${dest}`,
-                }
-                socket.emit(EVENTS.COMMAND_RESULT, fileMovedObj)
+			if (copyOnly) {
+				const copyFile = await import('fs-extra')
+				await copyFile.copy(source, uniqueDest)
+
+				const fileCopiedObj = {
+					command: 'moveFile',
+					status: 'ok',
+					result: `File copied successfully: ${uniqueDest}`,
+				}
+                socket?.emit(EVENTS.COMMAND_RESULT, fileCopiedObj)
                 resolve()
-            })
-            .catch((err: Error) => {
-                let fileMovedObj = {
-                    command: 'moveFile',
-                    status: 'error',
-                    result: `Error moving file: ${err.message}`,
-                }
-                socket.emit(EVENTS.COMMAND_RESULT, fileMovedObj)
-                reject(err)
-            })
-    })
+			} else {
+				const { moveFile } = await import('move-file')
+				await moveFile(source, uniqueDest)
+
+				const fileMovedObj = {
+					command: 'moveFile',
+					status: 'ok',
+					result: `File moved successfully: ${uniqueDest}`,
+				}
+				socket?.emit(EVENTS.COMMAND_RESULT, fileMovedObj)
+				resolve()
+			}
+		} catch (err: any) {
+			const errorObj = {
+				command: 'moveFile',
+				status: 'error',
+				result: `Error ${copyOnly ? 'copying' : 'moving'} file: ${err.message}`,
+			}
+			console.error(errorObj.result)
+			//socket?.emit(EVENTS.COMMAND_RESULT, errorObj)
+			reject(errorObj)
+		}
+	})
 }
 
 export async function moveFiles(
-    sourceFolder: string,
-    destFolder: string,
-    fileExtension: string,
-    socket: Socket
+	sourceFolder: string,
+	destFolder: string,
+	fileExtension: string,
+	copyOnly: boolean,
+	socket: Socket
 ): Promise<void> {
-    return new Promise((resolve, reject) => {
-        fs.readdir(
-            sourceFolder,
-            (err: NodeJS.ErrnoException | null, files: string[]) => {
-                if (err) {
-                    reject(`Error reading source folder: ${err.message}`)
-                    return
-                }
-                const movePromises = files.map((file) => {
-                    const sourcePath = path.join(sourceFolder, file)
-                    const destPath = path.join(destFolder, file)
-                    return moveFile(sourcePath, destPath, socket).catch(
-                        (err: Error) => {
-                            console.error(
-                                `Error moving file ${file}: ${err.message}`
-                            )
-                        }
-                    )
-                })
-                Promise.all(movePromises)
-                    .then(() => {
-                        console.log('All files moved successfully.')
-                        resolve()
-                    })
-                    .catch((err: Error) => {
-                        console.error(`Error moving files: ${err.message}`)
-                        reject(err)
-                    })
-            }
-        )
-    })
+	return new Promise((resolve, reject) => {
+		fs.readdir(sourceFolder, (err, files) => {
+			if (err) {
+				reject(`Error reading source folder: ${err.message}`)
+				return
+			}
+
+			// Filter files by the given file extension
+			const filteredFiles = files.filter((file) =>
+				file.toLowerCase().endsWith(fileExtension.toLowerCase())
+			)
+
+			const movePromises = filteredFiles.map((file) => {
+				const sourcePath = path.join(sourceFolder, file)
+				const destPath = path.join(destFolder, file)
+				return moveFile(sourcePath, destPath, copyOnly, socket).catch((err: Error) => {
+					console.error(`Error moving file ${file}: ${err.message}`)
+				})
+			})
+
+			Promise.all(movePromises)
+				.then(() => {
+					console.log('All matching files moved successfully.')
+					resolve()
+				})
+				.catch((err: Error) => {
+					console.error(`Error moving files: ${err.message}`)
+					reject(err)
+				})
+		})
+	})
 }

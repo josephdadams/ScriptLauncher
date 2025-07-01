@@ -76,7 +76,7 @@ export function registerSocketHandlers(io: SocketIOServer) {
                     )
                     socket.emit(EVENTS.COMMAND_RESULT, {
                         command: commandName,
-                        error: 'Internal server error',
+                        error: err.message || err.result || 'Internal server error',
                     })
                 }
             }

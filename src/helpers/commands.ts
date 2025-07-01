@@ -210,8 +210,26 @@ const uiCommands = {
 
 // ---- FILE COMMANDS ----
 const fileCommands = {
+    moveFile: withMeta(
+        async ({ sourcePath, destPath, copyOnly }, password, ctx) => {
+            if (!checkPassword(ctx as any, password))
+                throw new Error('Invalid password')
+
+            await moveFile(sourcePath, destPath, copyOnly, ctx as any)
+            return `File moved successfully: ${destPath}`
+        },
+        {
+            description: 'Move a file to a new location with a new name',
+            paramsExample: {
+                sourcePath: '/path/to/file.txt',
+                destPath: '/new/path',
+                copyOnly: false,
+            },
+            requiresPassword: true,
+        }
+    ),
     moveDatedFileInFolder: withMeta(
-        async ({ src, order, dest, name }, password, ctx) => {
+        async ({ src, order, dest, name, copyOnly }, password, ctx) => {
             if (!checkPassword(ctx as any, password))
                 throw new Error('Invalid password')
             await moveDatedFile({
@@ -219,7 +237,8 @@ const fileCommands = {
                 destFolderPath: dest,
                 newestOrOldest: order,
                 fileName: name,
-                socket: ctx?.emit as any,
+                copyOnly: copyOnly,
+                socket: ctx as any,
             })
             return `File moved successfully: ${name}`
         },
@@ -231,13 +250,14 @@ const fileCommands = {
                 order: 'newest',
                 dest: '/dest',
                 name: 'file.txt',
+                copyOnly: false,
             },
             requiresPassword: true,
         }
     ),
 
     moveDatedFileInFolderWithExtension: withMeta(
-        async ({ src, order, ext, dest, name }, password, ctx) => {
+        async ({ src, order, ext, dest, name, copyOnly }, password, ctx) => {
             if (!checkPassword(ctx as any, password))
                 throw new Error('Invalid password')
             await moveDatedFile({
@@ -246,7 +266,8 @@ const fileCommands = {
                 newestOrOldest: order,
                 fileExtension: ext,
                 fileName: name,
-                socket: ctx?.emit as any,
+                copyOnly: copyOnly,
+                socket: ctx as any,
             })
             return 'File moved by date and extension'
         },
@@ -270,7 +291,9 @@ const fileCommands = {
             const {
                 sourceFolderPath,
                 destFolderPathLarger,
+                copyOnlyLarger,
                 destFolderPathSmaller,
+                copyOnlySmaller,
                 sizeThreshold,
                 fileExtension,
                 newestOrOldest,
@@ -313,14 +336,16 @@ const fileCommands = {
                 await moveFile(
                     path.join(sourceFolderPath, file),
                     path.join(destFolderPathLarger, file),
-                    ctx?.emit as any
+                    copyOnlyLarger,
+                    ctx as any
                 )
             }
             for (const file of smaller) {
                 await moveFile(
                     path.join(sourceFolderPath, file),
                     path.join(destFolderPathSmaller, file),
-                    ctx?.emit as any
+                    copyOnlySmaller,
+                    ctx as any
                 )
             }
             return 'Files moved based on size'
@@ -331,7 +356,9 @@ const fileCommands = {
             paramsExample: {
                 sourceFolderPath: '/source',
                 destFolderPathLarger: '/large',
+                copyOnlyLarger: false,
                 destFolderPathSmaller: '/small',
+                copyOnlySmaller: true,
                 sizeThreshold: 100,
                 fileExtension: '.mp4',
                 newestOrOldest: 'newest',
