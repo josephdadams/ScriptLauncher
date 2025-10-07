@@ -12,17 +12,17 @@ const store = new Store()
 
 export default function createTray() {
     const iconFile = nativeTheme.shouldUseDarkColors
-	? 'tray-icon-light.png' // for dark mode
-	: 'tray-icon.png'       // for light mode
+        ? 'tray-icon-light.png' // for dark mode
+        : 'tray-icon.png' // for light mode
 
     const image = nativeImage.createFromPath(
         path.join(__dirname, `../assets/${iconFile}`)
     )
 
     // macOS: enable auto-theming
-	if (process.platform === 'darwin') {
-		image.setTemplateImage(true)
-	}
+    if (process.platform === 'darwin') {
+        image.setTemplateImage(true)
+    }
 
     tray = new Tray(image.resize({ width: 16, height: 16 }))
     tray.setToolTip('ScriptLauncher')
@@ -31,9 +31,9 @@ export default function createTray() {
     nativeTheme.on('updated', () => {
         if (!tray) return
 
-       const iconFile = nativeTheme.shouldUseDarkColors
-        ? 'tray-icon-light.png' // for dark mode
-        : 'tray-icon.png'       // for light mode
+        const iconFile = nativeTheme.shouldUseDarkColors
+            ? 'tray-icon-light.png' // for dark mode
+            : 'tray-icon.png' // for light mode
 
         const image = nativeImage.createFromPath(
             path.join(__dirname, `../assets/${iconFile}`)

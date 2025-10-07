@@ -229,18 +229,32 @@ const fileCommands = {
         }
     ),
     moveDatedFileInFolder: withMeta(
-        async ({ src, order, dest, name, copyOnly }, password, ctx) => {
+        async (
+            {
+                sourceFolderPath,
+                destFolderPath,
+                newestOrOldest,
+                fileExtension,
+                fileName,
+                copyOnly,
+            },
+            password,
+            ctx
+        ) => {
             if (!checkPassword(ctx as any, password))
                 throw new Error('Invalid password')
+
             await moveDatedFile({
-                sourceFolderPath: src,
-                destFolderPath: dest,
-                newestOrOldest: order,
-                fileName: name,
-                copyOnly: copyOnly,
+                sourceFolderPath,
+                destFolderPath,
+                newestOrOldest,
+                fileExtension,
+                fileName,
+                copyOnly,
                 socket: ctx as any,
             })
-            return `File moved successfully: ${name}`
+
+            return `File moved successfully: ${fileName}`
         },
         {
             description:
@@ -366,6 +380,37 @@ const fileCommands = {
             requiresPassword: true,
         }
     ),
+
+    /*reportFilesInFolder: withMeta(
+        async ({ folderPath, fileExtension }, password, ctx) => {
+            if (!checkPassword(ctx as any, password))
+                throw new Error('Invalid password')
+            const files = fs.readdirSync(folderPath)
+            const filteredFiles = fileExtension
+                ? files.filter(
+                      (file) =>
+                          path.extname(file).toLowerCase() ===
+                          fileExtension.toLowerCase()
+                  )
+                : files
+            const fileList = filteredFiles
+            if (ctx && 'emit' in ctx) {
+                ctx?.emit?(EVENTS.COMMAND_RESULT, {
+                    folderPath,
+                    files: filteredFiles,
+                })
+            }
+            return `Files in ${folderPath}:\n${fileList}`
+        },
+        {
+            description: 'List files in a specified folder',
+            paramsExample: {
+                folderPath: '/path/to/folder',
+                fileExtension: '.txt',
+            },
+            requiresPassword: true,
+        }
+    ),*/
 }
 
 // ---- APP COMMANDS ----

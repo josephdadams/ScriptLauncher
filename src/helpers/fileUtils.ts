@@ -59,21 +59,30 @@ export function isPathForbidden(p: string): boolean {
 
 export function getLatestFile(
     files: string[],
-    folder: string,
+    folderPath: string,
     newestOrOldest: 'newest' | 'oldest'
-): string | null {
-    if (files.length === 0) return null
+): string | undefined {
+    const sorted = files
+        .map((file) => {
+            const fullPath = path.join(folderPath, file)
+            try {
+                const stats = fs.statSync(fullPath)
+                return {
+                    file,
+                    mtime: stats.mtimeMs,
+                }
+            } catch {
+                return null
+            }
+        })
+        .filter(Boolean)
+        .sort((a, b) => {
+            return newestOrOldest === 'newest'
+                ? b!.mtime - a!.mtime
+                : a!.mtime - b!.mtime
+        })
 
-    files.sort((a, b) => {
-        return (
-            fs.statSync(path.join(folder, b)).mtime.getTime() -
-            fs.statSync(path.join(folder, a)).mtime.getTime()
-        )
-    })
-
-    if (newestOrOldest === 'oldest') files.reverse()
-
-    return files[0] || null
+    return sorted[0]?.file
 }
 
 export function generateUniqueFilePath(
@@ -120,8 +129,20 @@ export async function moveDatedFile({
     copyOnly: boolean
     socket: Socket
 }) {
+    console.log(`[moveDatedFile] Starting file move operation...`)
+    console.log(`[moveDatedFile] Parameters:`, {
+        sourceFolderPath,
+        destFolderPath,
+        newestOrOldest,
+        fileExtension,
+        fileName,
+        copyOnly,
+    })
+
     const resolvedSource = path.resolve(sourceFolderPath)
+    console.log(`[moveDatedFile] Resolved source: ${resolvedSource}`)
     const resolvedDest = path.resolve(destFolderPath || sourceFolderPath)
+    console.log(`[moveDatedFile] Resolved destination: ${resolvedDest}`)
 
     if (!fs.existsSync(resolvedSource)) {
         const errorObj = {
@@ -141,12 +162,24 @@ export async function moveDatedFile({
         return
     }
 
+    console.log(`[moveDatedFile] Searching for files in ${resolvedSource}...`)
     const files = fs.readdirSync(resolvedSource).filter((f) => {
-        return !fileExtension || path.extname(f) === fileExtension
+        //filter by fileExtension if provided
+        if (
+            fileExtension &&
+            fileExtension !== '' &&
+            fileExtension !== 'undefined'
+        ) {
+            return path.extname(f) === fileExtension
+        }
+        return true
     })
+
+    console.log(`[moveDatedFile] Found files in ${resolvedSource}:`, files)
 
     const firstFile = getLatestFile(files, resolvedSource, newestOrOldest)
     if (!firstFile) {
+        console.log(`[moveDatedFile] No matching files found.`)
         const errorObj = {
             command: 'moveDatedFile',
             error: `No matching files found in ${resolvedSource}`,
@@ -159,103 +192,114 @@ export async function moveDatedFile({
     const ext = path.extname(firstFile)
 
     let newFileName = sanitizeFilename(fileName)
+    console.log(`[moveDatedFile] Moving file: ${firstFile} to ${newFileName}`)
+    
     if (path.extname(newFileName) === '') {
         newFileName += ext
     }
 
     if (!fs.existsSync(resolvedDest)) {
+        console.log(`[moveDatedFile] Creating destination folder: ${resolvedDest}`)
         fs.mkdirSync(resolvedDest, { recursive: true })
     }
 
     const destFilePath = generateUniqueFilePath(resolvedDest, newFileName)
+    console.log(`[moveDatedFile] Moving file: ${sourceFilePath} to ${destFilePath}`)
 
     await moveFile(sourceFilePath, destFilePath, copyOnly, socket)
 }
 
 export async function moveFile(
-	source: string,
-	dest: string,
-	copyOnly: boolean,
-	socket: any
+    source: string,
+    dest: string,
+    copyOnly: boolean,
+    socket: any
 ): Promise<void> {
-	return new Promise(async (resolve, reject) => {
-		try {
-			const destFolder = path.dirname(dest)
-			const fileName = path.basename(dest)
-			const uniqueDest = generateUniqueFilePath(destFolder, fileName)
+    return new Promise(async (resolve, reject) => {
+        try {
+            const destFolder = path.dirname(dest)
+            const fileName = path.basename(dest)
+            const uniqueDest = generateUniqueFilePath(destFolder, fileName)
 
-			if (copyOnly) {
-				const copyFile = await import('fs-extra')
-				await copyFile.copy(source, uniqueDest)
+            if (copyOnly) {
+                const copyFile = await import('fs-extra')
+                await copyFile.copy(source, uniqueDest)
 
-				const fileCopiedObj = {
-					command: 'moveFile',
-					status: 'ok',
-					result: `File copied successfully: ${uniqueDest}`,
-				}
+                const fileCopiedObj = {
+                    command: 'moveFile',
+                    status: 'ok',
+                    result: `File copied successfully: ${uniqueDest}`,
+                }
                 socket?.emit(EVENTS.COMMAND_RESULT, fileCopiedObj)
                 resolve()
-			} else {
-				const { moveFile } = await import('move-file')
-				await moveFile(source, uniqueDest)
+            } else {
+                const { moveFile } = await import('move-file')
+                
 
-				const fileMovedObj = {
-					command: 'moveFile',
-					status: 'ok',
-					result: `File moved successfully: ${uniqueDest}`,
-				}
-				socket?.emit(EVENTS.COMMAND_RESULT, fileMovedObj)
-				resolve()
-			}
-		} catch (err: any) {
-			const errorObj = {
-				command: 'moveFile',
-				status: 'error',
-				result: `Error ${copyOnly ? 'copying' : 'moving'} file: ${err.message}`,
-			}
-			console.error(errorObj.result)
-			//socket?.emit(EVENTS.COMMAND_RESULT, errorObj)
-			reject(errorObj)
-		}
-	})
+                console.log(`[moveFile] Moving file: ${source} to ${uniqueDest}`)
+await moveFile(source, uniqueDest)
+console.log(`[moveFile] File moved successfully: ${uniqueDest}`)
+                const fileMovedObj = {
+                    command: 'moveFile',
+                    status: 'ok',
+                    result: `File moved successfully: ${uniqueDest}`,
+                }
+                socket?.emit(EVENTS.COMMAND_RESULT, fileMovedObj)
+                resolve()
+            }
+        } catch (err: any) {
+            const errorObj = {
+                command: 'moveFile',
+                status: 'error',
+                result: `Error ${copyOnly ? 'copying' : 'moving'} file: ${err.message}`,
+            }
+            console.error(errorObj.result)
+            //socket?.emit(EVENTS.COMMAND_RESULT, errorObj)
+            reject(errorObj)
+        }
+    })
 }
 
 export async function moveFiles(
-	sourceFolder: string,
-	destFolder: string,
-	fileExtension: string,
-	copyOnly: boolean,
-	socket: Socket
+    sourceFolder: string,
+    destFolder: string,
+    fileExtension: string,
+    copyOnly: boolean,
+    socket: Socket
 ): Promise<void> {
-	return new Promise((resolve, reject) => {
-		fs.readdir(sourceFolder, (err, files) => {
-			if (err) {
-				reject(`Error reading source folder: ${err.message}`)
-				return
-			}
+    return new Promise((resolve, reject) => {
+        fs.readdir(sourceFolder, (err, files) => {
+            if (err) {
+                reject(`Error reading source folder: ${err.message}`)
+                return
+            }
 
-			// Filter files by the given file extension
-			const filteredFiles = files.filter((file) =>
-				file.toLowerCase().endsWith(fileExtension.toLowerCase())
-			)
+            // Filter files by the given file extension
+            const filteredFiles = files.filter((file) =>
+                file.toLowerCase().endsWith(fileExtension.toLowerCase())
+            )
 
-			const movePromises = filteredFiles.map((file) => {
-				const sourcePath = path.join(sourceFolder, file)
-				const destPath = path.join(destFolder, file)
-				return moveFile(sourcePath, destPath, copyOnly, socket).catch((err: Error) => {
-					console.error(`Error moving file ${file}: ${err.message}`)
-				})
-			})
+            const movePromises = filteredFiles.map((file) => {
+                const sourcePath = path.join(sourceFolder, file)
+                const destPath = path.join(destFolder, file)
+                return moveFile(sourcePath, destPath, copyOnly, socket).catch(
+                    (err: Error) => {
+                        console.error(
+                            `Error moving file ${file}: ${err.message}`
+                        )
+                    }
+                )
+            })
 
-			Promise.all(movePromises)
-				.then(() => {
-					console.log('All matching files moved successfully.')
-					resolve()
-				})
-				.catch((err: Error) => {
-					console.error(`Error moving files: ${err.message}`)
-					reject(err)
-				})
-		})
-	})
+            Promise.all(movePromises)
+                .then(() => {
+                    console.log('All matching files moved successfully.')
+                    resolve()
+                })
+                .catch((err: Error) => {
+                    console.error(`Error moving files: ${err.message}`)
+                    reject(err)
+                })
+        })
+    })
 }
