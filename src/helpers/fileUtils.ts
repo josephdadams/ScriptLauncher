@@ -193,18 +193,22 @@ export async function moveDatedFile({
 
     let newFileName = sanitizeFilename(fileName)
     console.log(`[moveDatedFile] Moving file: ${firstFile} to ${newFileName}`)
-    
+
     if (path.extname(newFileName) === '') {
         newFileName += ext
     }
 
     if (!fs.existsSync(resolvedDest)) {
-        console.log(`[moveDatedFile] Creating destination folder: ${resolvedDest}`)
+        console.log(
+            `[moveDatedFile] Creating destination folder: ${resolvedDest}`
+        )
         fs.mkdirSync(resolvedDest, { recursive: true })
     }
 
     const destFilePath = generateUniqueFilePath(resolvedDest, newFileName)
-    console.log(`[moveDatedFile] Moving file: ${sourceFilePath} to ${destFilePath}`)
+    console.log(
+        `[moveDatedFile] Moving file: ${sourceFilePath} to ${destFilePath}`
+    )
 
     await moveFile(sourceFilePath, destFilePath, copyOnly, socket)
 }
@@ -234,11 +238,12 @@ export async function moveFile(
                 resolve()
             } else {
                 const { moveFile } = await import('move-file')
-                
 
-                console.log(`[moveFile] Moving file: ${source} to ${uniqueDest}`)
-await moveFile(source, uniqueDest)
-console.log(`[moveFile] File moved successfully: ${uniqueDest}`)
+                console.log(
+                    `[moveFile] Moving file: ${source} to ${uniqueDest}`
+                )
+                await moveFile(source, uniqueDest)
+                console.log(`[moveFile] File moved successfully: ${uniqueDest}`)
                 const fileMovedObj = {
                     command: 'moveFile',
                     status: 'ok',
