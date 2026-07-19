@@ -69,17 +69,18 @@ Use `io.connect('http://localhost:8810')` to get started.
 ```ts
 socket.emit('command', {
     command: 'shutdown',
-    password: 'admin22',
+    password: 'admin',
     time: 5,
 })
 ```
 
 #### Result Events
 
-Each command will return a response via `${command}_result`, e.g.,:
+Every command replies on a single `command_result` event with an object of
+the shape `{ command, status, result }` (or `{ command, error }` on failure):
 
 ```ts
-socket.on('shutdown_result', (msg) => console.log(msg))
+socket.on('command_result', (msg) => console.log(msg))
 ```
 
 #### Supported Commands (Partial List)
@@ -102,7 +103,7 @@ Send any command with JSON body:
 ```json
 {
     "command": "shutdown",
-    "password": "admin22",
+    "password": "admin",
     "time": 5
 }
 ```
@@ -115,7 +116,10 @@ Returns a list of all available commands with metadata.
 
 ## 🔒 Security
 
-Most actions require the configured password for authorization. Keep this secret.
+Most actions require the configured password for authorization. The default
+password is `admin` — **change it** in Settings before exposing the app, and
+keep it secret. ScriptLauncher can run arbitrary local commands, so treat
+network access to it as equivalent to shell access on the machine.
 
 ---
 

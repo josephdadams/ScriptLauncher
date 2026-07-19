@@ -8,6 +8,7 @@
     "scripts": {
         "start": "yarn build && electron .",
         "build": "tsc",
+        "test": "tsc && node --test \"dist/**/*.test.js\"",
         "electron:rebuild": "electron-builder --dir",
         "dev": "concurrently \"tsc -w\" \"wait-on dist/main.js && electron .\"",
         "format": "prettier -w .",
@@ -19,6 +20,7 @@
         "productName": "scriptlauncher",
         "files": [
             "dist/**/*",
+            "!dist/**/*.test.*",
             "public/**/*",
             "assets/**/*",
             "package.json"

@@ -1,13 +1,9 @@
 // --- helpers/systemUtils.ts ---
 import { spawn } from 'child_process'
 import { Socket } from 'socket.io'
-import Store from 'electron-store'
 import systeminformation from 'systeminformation'
 import { getFonts } from 'font-list'
-import { EVENTS } from './generalUtils.js'
-
-const store = new Store()
-const adminPassword = store.get('password')
+import { EVENTS } from './events.js'
 
 export async function getSystemInfo() {
     try {
@@ -48,8 +44,8 @@ export async function getSystemInfo() {
 
 export function runScript(
     executable: string,
-    args: string[],
-    stdin: string
+    args: string[] = [],
+    stdin?: string
 ): Promise<string> {
     return new Promise((resolve, reject) => {
         console.log(`Running script: ${executable} ${args.join(' ')}`)
@@ -59,7 +55,9 @@ export function runScript(
         let output = '',
             errorOutput = ''
 
-        process.stdin.write(stdin)
+        if (typeof stdin === 'string') {
+            process.stdin.write(stdin)
+        }
         process.stdin.end()
 
         process.stdout.on('data', (data) => (output += data.toString()))

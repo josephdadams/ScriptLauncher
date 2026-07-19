@@ -3,7 +3,19 @@ import fs from 'fs'
 import path from 'path'
 import { Socket } from 'socket.io'
 
-import { EVENTS } from './generalUtils.js'
+import { EVENTS } from './events.js'
+
+export function ensureDir(dir: string) {
+    fs.mkdirSync(dir, { recursive: true })
+}
+
+export function isRegularFile(fullPath: string) {
+    try {
+        return fs.statSync(fullPath).isFile()
+    } catch {
+        return false
+    }
+}
 
 export function sanitizeFilename(inputPath: string): string {
     const dir = path.dirname(inputPath)
@@ -85,16 +97,18 @@ export function getLatestFile(
     return sorted[0]?.file
 }
 
+// Builds a collision-free destination path, lightly sanitizing the leaf
+// filename (never the folder). Shared by every move/copy path.
 export function generateUniqueFilePath(
     destFolder: string,
     fileName: string
 ): string {
-    const ext = path.extname(fileName)
-    const base = path.basename(fileName, ext)
+    const parsed = path.parse(fileName)
+    const ext = parsed.ext
+    const base = parsed.name.replace(/[<>:"/\\|?*\x00-\x1F]/g, '_') || '_file'
 
+    let candidatePath = path.join(destFolder, `${base}${ext}`)
     let count = 1
-    let candidatePath = path.join(destFolder, fileName)
-
     while (fs.existsSync(candidatePath)) {
         candidatePath = path.join(destFolder, `${base}_${count}${ext}`)
         count++
@@ -213,56 +227,71 @@ export async function moveDatedFile({
     await moveFile(sourceFilePath, destFilePath, copyOnly, socket)
 }
 
+export function sanitizeUserPath(p: string) {
+    if (typeof p !== 'string') throw new Error('Expected string path')
+    // Strip one pair of surrounding quotes and trim whitespace
+    const unquoted = p.trim().replace(/^["'](.*)["']$/, '$1')
+    // Normalize (keeps drive letters and UNC)
+    return process.platform === 'win32'
+        ? path.win32.normalize(unquoted)
+        : path.normalize(unquoted)
+}
+
 export async function moveFile(
     source: string,
     dest: string,
     copyOnly: boolean,
     socket: any
 ): Promise<void> {
-    return new Promise(async (resolve, reject) => {
-        try {
-            const destFolder = path.dirname(dest)
-            const fileName = path.basename(dest)
-            const uniqueDest = generateUniqueFilePath(destFolder, fileName)
+    // Sanitize/normalize inputs (defense in depth)
+    const cleanSource = sanitizeUserPath(source)
+    const cleanDest = sanitizeUserPath(dest)
 
-            if (copyOnly) {
-                const copyFile = await import('fs-extra')
-                await copyFile.copy(source, uniqueDest)
+    // Enforce forbidden-path protection at the lowest layer so every
+    // command that moves/copies files is covered, not just moveDatedFile.
+    if (isPathForbidden(cleanSource) || isPathForbidden(cleanDest)) {
+        throw new Error(`Path is forbidden: ${cleanSource} or ${cleanDest}`)
+    }
 
-                const fileCopiedObj = {
-                    command: 'moveFile',
-                    status: 'ok',
-                    result: `File copied successfully: ${uniqueDest}`,
-                }
-                socket?.emit(EVENTS.COMMAND_RESULT, fileCopiedObj)
-                resolve()
-            } else {
-                const { moveFile } = await import('move-file')
+    const destFolder = path.dirname(cleanDest)
+    const fileName = path.basename(cleanDest)
 
-                console.log(
-                    `[moveFile] Moving file: ${source} to ${uniqueDest}`
-                )
-                await moveFile(source, uniqueDest)
-                console.log(`[moveFile] File moved successfully: ${uniqueDest}`)
-                const fileMovedObj = {
-                    command: 'moveFile',
-                    status: 'ok',
-                    result: `File moved successfully: ${uniqueDest}`,
-                }
-                socket?.emit(EVENTS.COMMAND_RESULT, fileMovedObj)
-                resolve()
-            }
-        } catch (err: any) {
-            const errorObj = {
+    // Make sure the destination directory exists
+    ensureDir(destFolder)
+
+    // Build a collision-free path (and lightly sanitize filename)
+    const uniqueDest = generateUniqueFilePath(destFolder, fileName)
+
+    try {
+        if (copyOnly) {
+            const fsx = await import('fs-extra')
+            await fsx.copy(cleanSource, uniqueDest)
+            socket?.emit(EVENTS.COMMAND_RESULT, {
                 command: 'moveFile',
-                status: 'error',
-                result: `Error ${copyOnly ? 'copying' : 'moving'} file: ${err.message}`,
-            }
-            console.error(errorObj.result)
-            //socket?.emit(EVENTS.COMMAND_RESULT, errorObj)
-            reject(errorObj)
+                status: 'ok',
+                result: `File copied successfully: ${uniqueDest}`,
+            })
+        } else {
+            // Avoid name shadowing with this function
+            const { moveFile: moveFileLib } = await import('move-file')
+            console.log(
+                `[moveFile] Moving file: ${cleanSource} to ${uniqueDest}`
+            )
+            await moveFileLib(cleanSource, uniqueDest)
+            console.log(`[moveFile] File moved successfully: ${uniqueDest}`)
+            socket?.emit(EVENTS.COMMAND_RESULT, {
+                command: 'moveFile',
+                status: 'ok',
+                result: `File moved successfully: ${uniqueDest}`,
+            })
         }
-    })
+    } catch (err: any) {
+        const msg = `Error ${copyOnly ? 'copying' : 'moving'} file: ${err?.message || err}`
+        console.error(msg)
+        // If you want ScriptLauncher to surface the error immediately, emit it:
+        // socket?.emit(EVENTS.COMMAND_RESULT, { command:'moveFile', status:'error', result: msg })
+        throw new Error(msg)
+    }
 }
 
 export async function moveFiles(

@@ -1,16 +1,28 @@
 import { Socket, Server as SocketIOServer } from 'socket.io'
 import { CommandHandlers } from './commands.js'
-import { EVENTS } from './generalUtils.js'
+import { EVENTS } from './events.js'
+import { checkPassword } from './generalUtils.js'
+import { getSystemInfo } from './systemUtils.js'
 import { CommandError } from './errors.js'
 
 import os from 'os'
 import { getAppVersion } from './version.js'
 const APP_VERSION = getAppVersion()
 
-let systemInfoInterval: NodeJS.Timeout | undefined
+let uptimeInterval: NodeJS.Timeout | undefined
 
 export function registerSocketHandlers(io: SocketIOServer) {
     io.on('connection', (socket: Socket) => {
+        // System-info polling is per-connection so clients don't clobber each
+        // other's intervals, and it is torn down when the socket disconnects.
+        let systemInfoInterval: NodeJS.Timeout | undefined
+        const clearSystemInfo = () => {
+            if (systemInfoInterval) {
+                clearInterval(systemInfoInterval)
+                systemInfoInterval = undefined
+            }
+        }
+
         let platformObj = {
             command: 'platform',
             status: 'ok',
@@ -86,10 +98,20 @@ export function registerSocketHandlers(io: SocketIOServer) {
         })
 
         // Keep these as direct events if needed
-        socket.on('startSystemInfo', () => {
-            clearInterval(systemInfoInterval)
+        socket.on('startSystemInfo', (data: any) => {
+            try {
+                checkPassword(socket, data?.password)
+            } catch (err: any) {
+                socket.emit(EVENTS.COMMAND_RESULT, {
+                    command: 'getSystemInfo',
+                    error: err.message || 'Invalid password',
+                })
+                return
+            }
+
+            clearSystemInfo()
             systemInfoInterval = setInterval(async () => {
-                const info = await CommandHandlers.getSystemInfo()
+                const info = await getSystemInfo()
                 const infoObj = {
                     command: 'getSystemInfo',
                     status: 'ok',
@@ -99,28 +121,31 @@ export function registerSocketHandlers(io: SocketIOServer) {
             }, 5000)
         })
 
-        socket.on('stopSystemInfo', () => stopSystemInfoInterval())
+        socket.on('stopSystemInfo', () => clearSystemInfo())
+        socket.on('disconnect', () => clearSystemInfo())
     })
 
     //interval for uptime to all sockets
-    setInterval(() => {
-        const uptimeObj = {
-            command: 'uptime',
-            status: 'ok',
-            result: {
-                uptime: process.uptime(),
-            },
-        }
-        io.emit(EVENTS.COMMAND_RESULT, uptimeObj)
-    }, 10000)
+    if (!uptimeInterval) {
+        uptimeInterval = setInterval(() => {
+            const uptimeObj = {
+                command: 'uptime',
+                status: 'ok',
+                result: {
+                    uptime: process.uptime(),
+                },
+            }
+            io.emit(EVENTS.COMMAND_RESULT, uptimeObj)
+        }, 10000)
+    }
 }
 
 export function stopSystemInfoInterval() {
-    if (systemInfoInterval) {
-        clearInterval(systemInfoInterval)
-        systemInfoInterval = undefined
+    if (uptimeInterval) {
+        clearInterval(uptimeInterval)
+        uptimeInterval = undefined
         console.log(
-            `[${new Date().toISOString()}] System info interval cleared`
+            `[${new Date().toISOString()}] Server broadcast interval cleared`
         )
     }
 }

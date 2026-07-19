@@ -6,7 +6,7 @@ import { app, BrowserWindow } from 'electron'
 import createTray from './tray.js'
 import { showNotification } from './notification.js'
 import { initializeIpcHandlers } from './ipcHandlers.js'
-import Store from 'electron-store'
+import { store } from './store.js'
 import { initializeServer } from './api.js'
 
 app.on('ready', () => {
@@ -14,7 +14,6 @@ app.on('ready', () => {
         app.dock.hide()
     }
 
-    const store = new Store()
     const PORT = store.get('port')
     const runAtLogin = store.get('runAtLogin', false) as boolean
 

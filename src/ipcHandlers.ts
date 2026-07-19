@@ -1,8 +1,5 @@
 import { ipcMain } from 'electron'
-import Store from 'electron-store'
-import { defaultSettings } from './defaults.js'
-
-const store = new Store({ defaults: defaultSettings })
+import { store } from './store.js'
 
 export function initializeIpcHandlers() {
     ipcMain.handle('getSettings', () => {

@@ -13,12 +13,21 @@ import {
 import {
     moveDatedFile,
     moveFile,
-    moveFiles,
     getFileSizeInMB,
     getLatestFile,
+    sanitizeUserPath,
+    ensureDir,
 } from './fileUtils.js'
 import { sendInputCommand } from './inputHandlers.js'
-import { checkPassword, EVENTS } from './generalUtils.js'
+import { checkPassword } from './generalUtils.js'
+import {
+    assertNonEmptyString,
+    assertOptionalString,
+    assertStringArray,
+    assertObject,
+    assertOneOf,
+    assertAppName,
+} from './validate.js'
 import { Socket } from 'socket.io'
 
 export type CommandContext =
@@ -51,8 +60,7 @@ function withMeta<T extends CommandHandler>(
 const systemCommands = {
     shutdown: withMeta(
         async ({ time = 1 }, password, ctx) => {
-            if (!checkPassword(ctx as any, password))
-                throw new Error('Invalid password')
+            checkPassword(ctx as any, password)
             shutdownSystem(time)
             return `System will shut down in ${time} minutes.`
         },
@@ -66,8 +74,7 @@ const systemCommands = {
 
     reboot: withMeta(
         async (_, password, ctx) => {
-            if (!checkPassword(ctx as any, password))
-                throw new Error('Invalid password')
+            checkPassword(ctx as any, password)
             const cmd =
                 process.platform === 'win32'
                     ? ['shutdown', '/r', '/f', '/t', '0']
@@ -85,8 +92,7 @@ const systemCommands = {
 
     lock: withMeta(
         async (_, password, ctx) => {
-            if (!checkPassword(ctx as any, password))
-                throw new Error('Invalid password')
+            checkPassword(ctx as any, password)
             const cmd =
                 process.platform === 'win32'
                     ? ['rundll32.exe', 'user32.dll,LockWorkStation']
@@ -109,8 +115,7 @@ const systemCommands = {
 
     shutdown_cancel: withMeta(
         async (_, password, ctx) => {
-            if (!checkPassword(ctx as any, password))
-                throw new Error('Invalid password')
+            checkPassword(ctx as any, password)
             const cmd =
                 process.platform === 'win32'
                     ? ['shutdown', '/a']
@@ -127,12 +132,13 @@ const systemCommands = {
     ),
 
     getSystemInfo: withMeta(
-        async () => {
+        async (_params, password, ctx) => {
+            checkPassword(ctx as any, password)
             return await getSystemInfo()
         },
         {
             description: 'Return system information snapshot',
-            requiresPassword: false,
+            requiresPassword: true,
         }
     ),
 }
@@ -142,10 +148,13 @@ const scriptCommands = {
     runScript: withMeta(
         async (params, password, ctx) => {
             console.log('Running script with params:', params)
-            if (!checkPassword(ctx as any, password))
-                throw new Error('Invalid password')
-            const { executable, args, stdin } = params
-            return await runScript(executable, args, stdin)
+            checkPassword(ctx as any, password)
+            const { executable, args, stdin } = params ?? {}
+            const exe = assertNonEmptyString(executable, 'executable')
+            const scriptArgs =
+                args === undefined ? [] : assertStringArray(args, 'args')
+            const scriptStdin = assertOptionalString(stdin, 'stdin')
+            return await runScript(exe, scriptArgs, scriptStdin)
         },
         {
             description:
@@ -164,10 +173,11 @@ const scriptCommands = {
 const inputCommands = {
     sendInput: withMeta(
         async (params, password, ctx) => {
-            if (!checkPassword(ctx as any, password))
-                throw new Error('Invalid password')
-            sendInputCommand(params)
-            return `Input command executed: ${params.type}`
+            checkPassword(ctx as any, password)
+            const input = assertObject(params, 'params')
+            assertNonEmptyString(input.type, 'type')
+            sendInputCommand(input)
+            return `Input command executed: ${input.type}`
         },
         {
             description: 'Send keyboard or mouse input',
@@ -181,13 +191,13 @@ const inputCommands = {
 const uiCommands = {
     sendAlert: withMeta(
         async ({ message }, password, ctx) => {
-            if (!checkPassword(ctx as any, password))
-                throw new Error('Invalid password')
+            checkPassword(ctx as any, password)
+            const text = assertOptionalString(message, 'message') || 'Alert'
             new Notification({
                 title: 'ScriptLauncher Alert',
-                body: message || 'Alert',
+                body: text,
             }).show()
-            return `Alert sent: ${message}`
+            return `Alert sent: ${text}`
         },
         {
             description: 'Display a desktop alert notification',
@@ -212,11 +222,12 @@ const uiCommands = {
 const fileCommands = {
     moveFile: withMeta(
         async ({ sourcePath, destPath, copyOnly }, password, ctx) => {
-            if (!checkPassword(ctx as any, password))
-                throw new Error('Invalid password')
+            checkPassword(ctx as any, password)
 
-            await moveFile(sourcePath, destPath, copyOnly, ctx as any)
-            return `File moved successfully: ${destPath}`
+            const src = assertNonEmptyString(sourcePath, 'sourcePath')
+            const dest = assertNonEmptyString(destPath, 'destPath')
+            await moveFile(src, dest, Boolean(copyOnly), ctx as any)
+            return `File moved successfully: ${dest}`
         },
         {
             description: 'Move a file to a new location with a new name',
@@ -241,16 +252,28 @@ const fileCommands = {
             password,
             ctx
         ) => {
-            if (!checkPassword(ctx as any, password))
-                throw new Error('Invalid password')
+            checkPassword(ctx as any, password)
 
             await moveDatedFile({
-                sourceFolderPath,
-                destFolderPath,
-                newestOrOldest,
-                fileExtension,
-                fileName,
-                copyOnly,
+                sourceFolderPath: assertNonEmptyString(
+                    sourceFolderPath,
+                    'sourceFolderPath'
+                ),
+                destFolderPath: assertOptionalString(
+                    destFolderPath,
+                    'destFolderPath'
+                ) as string,
+                newestOrOldest: assertOneOf(
+                    newestOrOldest,
+                    ['newest', 'oldest'] as const,
+                    'newestOrOldest'
+                ),
+                fileExtension: assertOptionalString(
+                    fileExtension,
+                    'fileExtension'
+                ),
+                fileName: assertNonEmptyString(fileName, 'fileName'),
+                copyOnly: Boolean(copyOnly),
                 socket: ctx as any,
             })
 
@@ -272,15 +295,18 @@ const fileCommands = {
 
     moveDatedFileInFolderWithExtension: withMeta(
         async ({ src, order, ext, dest, name, copyOnly }, password, ctx) => {
-            if (!checkPassword(ctx as any, password))
-                throw new Error('Invalid password')
+            checkPassword(ctx as any, password)
             await moveDatedFile({
-                sourceFolderPath: src,
-                destFolderPath: dest,
-                newestOrOldest: order,
-                fileExtension: ext,
-                fileName: name,
-                copyOnly: copyOnly,
+                sourceFolderPath: assertNonEmptyString(src, 'src'),
+                destFolderPath: assertOptionalString(dest, 'dest') as string,
+                newestOrOldest: assertOneOf(
+                    order,
+                    ['newest', 'oldest'] as const,
+                    'order'
+                ),
+                fileExtension: assertOptionalString(ext, 'ext'),
+                fileName: assertNonEmptyString(name, 'name'),
+                copyOnly: Boolean(copyOnly),
                 socket: ctx as any,
             })
             return 'File moved by date and extension'
@@ -300,8 +326,7 @@ const fileCommands = {
 
     moveFileBasedOnSize: withMeta(
         async (moveObj, password, ctx) => {
-            if (!checkPassword(ctx as any, password))
-                throw new Error('Invalid password')
+            checkPassword(ctx as any, password)
             const {
                 sourceFolderPath,
                 destFolderPathLarger,
@@ -312,11 +337,48 @@ const fileCommands = {
                 fileExtension,
                 newestOrOldest,
             } = moveObj
-            const files = fs.readdirSync(sourceFolderPath)
+
+            const source = sanitizeUserPath(
+                assertNonEmptyString(sourceFolderPath, 'sourceFolderPath')
+            )
+            const destLarge = sanitizeUserPath(
+                assertNonEmptyString(
+                    destFolderPathLarger,
+                    'destFolderPathLarger'
+                )
+            )
+            const destSmall = sanitizeUserPath(
+                assertNonEmptyString(
+                    destFolderPathSmaller,
+                    'destFolderPathSmaller'
+                )
+            )
+            if (
+                typeof sizeThreshold !== 'number' ||
+                Number.isNaN(sizeThreshold)
+            ) {
+                throw new Error(
+                    "Invalid or missing 'sizeThreshold': expected a number"
+                )
+            }
+
+            if (!fs.existsSync(source)) {
+                throw new Error(`Source folder does not exist: ${source}`)
+            }
+
+            const files = fs.readdirSync(source).filter((f) => {
+                try {
+                    return fs.statSync(path.join(source, f)).isFile()
+                } catch {
+                    return false
+                }
+            })
+
             const fileSizes = files.map((file) => ({
                 file,
-                size: getFileSizeInMB(path.join(sourceFolderPath, file)),
+                size: getFileSizeInMB(path.join(source, file)),
             }))
+
             let larger = fileSizes
                 .filter((f) => f.size >= sizeThreshold)
                 .map((f) => f.file)
@@ -347,17 +409,21 @@ const fileCommands = {
                 if (smallest) smaller = [smallest]
             }
             for (const file of larger) {
+                const target = path.join(destLarge, file)
+                ensureDir(path.dirname(target))
                 await moveFile(
-                    path.join(sourceFolderPath, file),
-                    path.join(destFolderPathLarger, file),
+                    path.join(source, file),
+                    target,
                     copyOnlyLarger,
                     ctx as any
                 )
             }
             for (const file of smaller) {
+                const target = path.join(destSmall, file)
+                ensureDir(path.dirname(target))
                 await moveFile(
-                    path.join(sourceFolderPath, file),
-                    path.join(destFolderPathSmaller, file),
+                    path.join(source, file),
+                    target,
                     copyOnlySmaller,
                     ctx as any
                 )
@@ -380,61 +446,30 @@ const fileCommands = {
             requiresPassword: true,
         }
     ),
-
-    /*reportFilesInFolder: withMeta(
-        async ({ folderPath, fileExtension }, password, ctx) => {
-            if (!checkPassword(ctx as any, password))
-                throw new Error('Invalid password')
-            const files = fs.readdirSync(folderPath)
-            const filteredFiles = fileExtension
-                ? files.filter(
-                      (file) =>
-                          path.extname(file).toLowerCase() ===
-                          fileExtension.toLowerCase()
-                  )
-                : files
-            const fileList = filteredFiles
-            if (ctx && 'emit' in ctx) {
-                ctx?.emit?(EVENTS.COMMAND_RESULT, {
-                    folderPath,
-                    files: filteredFiles,
-                })
-            }
-            return `Files in ${folderPath}:\n${fileList}`
-        },
-        {
-            description: 'List files in a specified folder',
-            paramsExample: {
-                folderPath: '/path/to/folder',
-                fileExtension: '.txt',
-            },
-            requiresPassword: true,
-        }
-    ),*/
 }
 
 // ---- APP COMMANDS ----
 const appCommands = {
     focusApp: withMeta(
         async ({ appName }, password, ctx) => {
-            if (!checkPassword(ctx as any, password))
-                throw new Error('Invalid password')
+            checkPassword(ctx as any, password)
+            const app = assertAppName(appName)
             const cmd =
                 process.platform === 'win32'
                     ? [
                           'powershell',
                           '-command',
-                          `& { $p=Get-Process -Name '${appName}' -ErrorAction SilentlyContinue; if ($p) { $h=$p.MainWindowHandle; Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public class WinAPI { [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd); }'; [WinAPI]::SetForegroundWindow($h) } else { Start-Process '${appName}' } }`,
+                          `& { $p=Get-Process -Name '${app}' -ErrorAction SilentlyContinue; if ($p) { $h=$p.MainWindowHandle; Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public class WinAPI { [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd); }'; [WinAPI]::SetForegroundWindow($h) } else { Start-Process '${app}' } }`,
                       ]
                     : process.platform === 'darwin'
                       ? [
                             'osascript',
                             '-e',
-                            `tell application "${appName}" to activate`,
+                            `tell application "${app}" to activate`,
                         ]
-                      : ['sh', '-c', `wmctrl -a "${appName}" || ${appName} &`]
-            await runSystemCommand(cmd, `Focusing on ${appName}...`)
-            return `Focused ${appName}`
+                      : ['sh', '-c', `wmctrl -a "${app}" || "${app}" &`]
+            await runSystemCommand(cmd, `Focusing on ${app}...`)
+            return `Focused ${app}`
         },
         {
             description: 'Bring a specific app window to the foreground',
@@ -445,20 +480,16 @@ const appCommands = {
 
     quitApp: withMeta(
         async ({ appName }, password, ctx) => {
-            if (!checkPassword(ctx as any, password))
-                throw new Error('Invalid password')
+            checkPassword(ctx as any, password)
+            const app = assertAppName(appName)
             const cmd =
                 process.platform === 'win32'
-                    ? ['taskkill', '/F', '/IM', `${appName}.exe`]
+                    ? ['taskkill', '/F', '/IM', `${app}.exe`]
                     : process.platform === 'darwin'
-                      ? [
-                            'osascript',
-                            '-e',
-                            `tell application "${appName}" to quit`,
-                        ]
-                      : ['pkill', '-f', appName]
-            await runSystemCommand(cmd, `Quitting ${appName}...`)
-            return `Quit ${appName}`
+                      ? ['osascript', '-e', `tell application "${app}" to quit`]
+                      : ['pkill', '-f', app]
+            await runSystemCommand(cmd, `Quitting ${app}...`)
+            return `Quit ${app}`
         },
         {
             description: 'Terminate the specified application',

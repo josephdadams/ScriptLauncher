@@ -1,14 +1,13 @@
 import { Tray, Menu, nativeImage, nativeTheme, app } from 'electron'
 import * as path from 'path'
-import Store from 'electron-store'
 import createSettingsWindow from './settings.js'
 import { fileURLToPath } from 'url'
+import { store } from './store.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 let tray: Tray | null = null
-const store = new Store()
 
 export default function createTray() {
     const iconFile = nativeTheme.shouldUseDarkColors
