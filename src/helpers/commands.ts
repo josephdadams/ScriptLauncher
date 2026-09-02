@@ -27,6 +27,7 @@ import {
     assertObject,
     assertOneOf,
     assertAppName,
+    assertNonNegativeInteger,
 } from './validate.js'
 import { Socket } from 'socket.io'
 
@@ -61,8 +62,9 @@ const systemCommands = {
     shutdown: withMeta(
         async ({ time = 1 }, password, ctx) => {
             checkPassword(ctx as any, password)
-            shutdownSystem(time)
-            return `System will shut down in ${time} minutes.`
+            const minutes = assertNonNegativeInteger(time, 'time')
+            shutdownSystem(minutes)
+            return `System will shut down in ${minutes} minutes.`
         },
         {
             description: 'Shutdown the system after a delay (in minutes)',
@@ -78,7 +80,9 @@ const systemCommands = {
             const cmd =
                 process.platform === 'win32'
                     ? ['shutdown', '/r', '/f', '/t', '0']
-                    : ['sudo', 'reboot']
+                    : process.platform === 'darwin'
+                      ? ['sudo', 'reboot']
+                      : ['systemctl', 'reboot']
             await runSystemCommand(cmd, 'System is rebooting...')
             return `System will reboot now.`
         },
@@ -102,7 +106,11 @@ const systemCommands = {
                             '-e',
                             'tell application "System Events" to keystroke "q" using {control down, command down}',
                         ]
-                      : ['gnome-screensaver-command', '-l']
+                      : [
+                            'sh',
+                            '-c',
+                            'loginctl lock-session || xdg-screensaver lock || gnome-screensaver-command -l',
+                        ]
             await runSystemCommand(cmd, 'System locking...')
             return 'System locked.'
         },
@@ -119,7 +127,9 @@ const systemCommands = {
             const cmd =
                 process.platform === 'win32'
                     ? ['shutdown', '/a']
-                    : ['sudo', 'shutdown', '-c']
+                    : process.platform === 'darwin'
+                      ? ['sudo', 'shutdown', '-c']
+                      : ['shutdown', '-c']
             await runSystemCommand(cmd, 'Shutdown cancelled.')
             return `Shutdown cancelled.`
         },
@@ -176,7 +186,7 @@ const inputCommands = {
             checkPassword(ctx as any, password)
             const input = assertObject(params, 'params')
             assertNonEmptyString(input.type, 'type')
-            sendInputCommand(input)
+            await sendInputCommand(input)
             return `Input command executed: ${input.type}`
         },
         {
@@ -467,7 +477,11 @@ const appCommands = {
                             '-e',
                             `tell application "${app}" to activate`,
                         ]
-                      : ['sh', '-c', `wmctrl -a "${app}" || "${app}" &`]
+                      : [
+                            'sh',
+                            '-c',
+                            `wmctrl -a "${app}" || xdotool search --name "${app}" windowactivate || "${app}" &`,
+                        ]
             await runSystemCommand(cmd, `Focusing on ${app}...`)
             return `Focused ${app}`
         },
@@ -487,7 +501,7 @@ const appCommands = {
                     ? ['taskkill', '/F', '/IM', `${app}.exe`]
                     : process.platform === 'darwin'
                       ? ['osascript', '-e', `tell application "${app}" to quit`]
-                      : ['pkill', '-f', app]
+                      : ['pkill', '-x', app]
             await runSystemCommand(cmd, `Quitting ${app}...`)
             return `Quit ${app}`
         },

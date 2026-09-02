@@ -30,6 +30,22 @@ export function assertOptionalString(
     return assertString(value, name)
 }
 
+export function assertNonNegativeInteger(value: unknown, name: string): number {
+    const n = typeof value === 'string' ? Number(value) : value
+    if (
+        typeof n !== 'number' ||
+        !Number.isInteger(n) ||
+        n < 0 ||
+        !Number.isFinite(n)
+    ) {
+        throw new CommandError(
+            `Invalid or missing '${name}': expected a non-negative integer`,
+            400
+        )
+    }
+    return n
+}
+
 export function assertOneOf<T extends string>(
     value: unknown,
     allowed: readonly T[],

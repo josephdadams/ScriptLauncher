@@ -1,7 +1,41 @@
-import robot from 'robotjs'
+import { CommandError } from './errors.js'
 
-export function sendInputCommand(cmd: any) {
+// robotjs is a native module that has to be compiled for the running Electron
+// ABI, and on Linux it links against X11/XTest. Importing it at module scope
+// meant a missing or unbuildable binary took down the whole app, since this
+// file is pulled in by the command table. Load it on first use instead so only
+// sendInput is affected.
+type RobotJs = typeof import('robotjs')
+
+let robot: RobotJs | null = null
+let loadError: string | null = null
+
+async function loadRobot(): Promise<RobotJs> {
+    if (robot) return robot
+
+    if (loadError === null) {
+        try {
+            const mod = await import('robotjs')
+            robot = ((mod as any).default ?? mod) as RobotJs
+            return robot
+        } catch (error) {
+            loadError = error instanceof Error ? error.message : String(error)
+        }
+    }
+
+    throw new CommandError(
+        `Input simulation is unavailable: robotjs failed to load (${loadError}).` +
+            (process.platform === 'linux'
+                ? ' On Linux it needs an X11 session plus libX11/libXtst at build time; it cannot inject input under Wayland.'
+                : ''),
+        501
+    )
+}
+
+export async function sendInputCommand(cmd: any) {
     console.log('sendInputCommand', cmd)
+    const robot = await loadRobot()
+
     switch (cmd.type) {
         case 'keyDown':
             robot.keyToggle(cmd.key, 'down')

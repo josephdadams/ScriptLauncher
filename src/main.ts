@@ -8,6 +8,7 @@ import { showNotification } from './notification.js'
 import { initializeIpcHandlers } from './ipcHandlers.js'
 import { store } from './store.js'
 import { initializeServer } from './api.js'
+import { setAutoLaunch } from './helpers/autoLaunch.js'
 
 app.on('ready', () => {
     if (process.platform === 'darwin') {
@@ -17,10 +18,7 @@ app.on('ready', () => {
     const PORT = store.get('port')
     const runAtLogin = store.get('runAtLogin', false) as boolean
 
-    app.setLoginItemSettings({
-        openAtLogin: runAtLogin,
-        path: app.getPath('exe'),
-    })
+    setAutoLaunch(runAtLogin)
 
     createTray()
     initializeIpcHandlers()

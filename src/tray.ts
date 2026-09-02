@@ -3,6 +3,7 @@ import * as path from 'path'
 import createSettingsWindow from './settings.js'
 import { fileURLToPath } from 'url'
 import { store } from './store.js'
+import { setAutoLaunch } from './helpers/autoLaunch.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -58,10 +59,7 @@ function updateTrayMenu() {
             click: (menuItem) => {
                 const shouldEnable = menuItem.checked
                 store.set('runAtLogin', shouldEnable)
-                app.setLoginItemSettings({
-                    openAtLogin: shouldEnable,
-                    path: app.getPath('exe'),
-                })
+                setAutoLaunch(shouldEnable)
             },
         },
         {
