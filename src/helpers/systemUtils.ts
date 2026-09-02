@@ -118,10 +118,14 @@ export function runSystemCommand(
 export function shutdownSystem(minutes: number, socket?: Socket) {
     const platform = process.platform
     const msg = `The system will shut down in ${minutes} minutes.`
+    // On Linux `shutdown` is systemd's, which authorizes an active local
+    // session through polkit. sudo would need a TTY it never gets from spawn.
     const shutdownCmd =
         platform === 'win32'
             ? ['shutdown', '/s', '/f', '/t', (minutes * 60).toString()]
-            : ['sudo', 'shutdown', '-h', `+${minutes}`, msg]
+            : platform === 'darwin'
+              ? ['sudo', 'shutdown', '-h', `+${minutes}`, msg]
+              : ['shutdown', '-h', `+${minutes}`, msg]
 
     if (platform !== 'win32') {
         const notifyCmd =
@@ -131,7 +135,9 @@ export function shutdownSystem(minutes: number, socket?: Socket) {
                       '-e',
                       `display notification "${msg}" with title "Shutdown Alert"`,
                   ]
-                : ['notify-send', 'Shutdown Alert', msg]
+                : // From libnotify; absent on minimal installs, in which
+                  // case runSystemCommand reports the spawn error.
+                  ['notify-send', 'Shutdown Alert', msg]
         runSystemCommand(notifyCmd, msg, socket)
     }
 

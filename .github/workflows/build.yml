@@ -14,7 +14,7 @@ jobs:
         runs-on: ${{ matrix.os }}
         strategy:
             matrix:
-                os: [windows-latest, macos-latest, ubuntu-latest]
+                os: [windows-latest, macos-latest, ubuntu-22.04]
         steps:
             - uses: actions/checkout@v3
             - name: Setup Node.js
@@ -22,11 +22,11 @@ jobs:
               with:
                   node-version: 20
 
-            - name: Install Linux dependencies for RobotJS
-              if: matrix.os == 'ubuntu-latest'
+            - name: Install Linux build dependencies (RobotJS, rpm packaging)
+              if: matrix.os == 'ubuntu-22.04'
               run: |
                   sudo apt-get update
-                  sudo apt-get install -y libx11-dev libxtst-dev libpng++-dev
+                  sudo apt-get install -y libx11-dev libxtst-dev libpng++-dev rpm
 
             - name: Install distutils via Homebrew (macOS only)
               if: matrix.os == 'macos-latest'

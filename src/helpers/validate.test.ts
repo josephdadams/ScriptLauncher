@@ -9,6 +9,7 @@ import {
     assertObject,
     assertStringArray,
     assertAppName,
+    assertNonNegativeInteger,
 } from './validate.js'
 import { CommandError } from './errors.js'
 
@@ -57,4 +58,24 @@ test('assertAppName blocks shell/script injection characters', () => {
     assert.throws(() => assertAppName('app && evil'), CommandError)
     assert.throws(() => assertAppName('app`whoami`'), CommandError)
     assert.throws(() => assertAppName(''), CommandError)
+})
+
+test('assertNonNegativeInteger coerces numeric strings and rejects the rest', () => {
+    assert.equal(assertNonNegativeInteger(5, 'time'), 5)
+    assert.equal(assertNonNegativeInteger('5', 'time'), 5)
+    assert.equal(assertNonNegativeInteger(0, 'time'), 0)
+    assert.throws(() => assertNonNegativeInteger(-1, 'time'), CommandError)
+    assert.throws(() => assertNonNegativeInteger(1.5, 'time'), CommandError)
+    assert.throws(
+        () => assertNonNegativeInteger('1; rm -rf ~', 'time'),
+        CommandError
+    )
+    assert.throws(
+        () => assertNonNegativeInteger(Infinity, 'time'),
+        CommandError
+    )
+    assert.throws(
+        () => assertNonNegativeInteger(undefined, 'time'),
+        CommandError
+    )
 })
